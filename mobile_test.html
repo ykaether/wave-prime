@@ -134,6 +134,7 @@
       pauseButton: { x: 0, y: 0, r: 34, label: "II" },
       fullscreenButton: { x: 0, y: 0, r: 34, label: "FULL" },
     };
+    let mobileInputMode = null;
 
     function isTouchControlsVisible() {
       if (!TOUCH_CONTROLS_ENABLED) return false;
@@ -146,8 +147,8 @@
 
     function layoutTouchControls() {
       const stickInsetX = WIDTH * 0.18;
-      const stickCenterY = HEIGHT * 0.58;
-      const ringOffset = 108;
+      const stickCenterY = HEIGHT * 0.5;
+      const ringOffset = 116;
 
       mobileTouch.joyBaseX = stickInsetX;
       mobileTouch.joyBaseY = stickCenterY;
@@ -195,6 +196,14 @@
       return {
         x: (e.clientX - rect.left) * (WIDTH / rect.width),
         y: (e.clientY - rect.top) * (HEIGHT / rect.height),
+      };
+    }
+
+    function getCanvasTouchPos(clientX, clientY) {
+      const rect = canvas.getBoundingClientRect();
+      return {
+        x: (clientX - rect.left) * (WIDTH / rect.width),
+        y: (clientY - rect.top) * (HEIGHT / rect.height),
       };
     }
 
@@ -436,127 +445,164 @@
       ctx.restore();
     }
 
+    function handleMobileTouchStart(id, clientX, clientY) {
+      const p = getCanvasTouchPos(clientX, clientY);
+
+      if (gamePaused) {
+        return handleTouchPauseMenuTap(p.x, p.y);
+      }
+
+      if (!isTouchControlsVisible()) return false;
+
+      layoutTouchControls();
+      requestMobileFullscreen();
+
+      if (pointInButton(p.x, p.y, mobileTouch.pauseButton)) {
+        touchPause();
+        return true;
+      }
+
+      if (pointInButton(p.x, p.y, mobileTouch.fullscreenButton)) {
+        requestMobileFullscreen();
+        return true;
+      }
+
+      if (pointInButton(p.x, p.y, mobileTouch.fireButton, 18)) {
+        mobileTouch.fireId = id;
+        mobileTouch.fireHeld = true;
+        return true;
+      }
+
+      if (pointInButton(p.x, p.y, mobileTouch.missileButton, 18)) {
+        fireMissile();
+        return true;
+      }
+
+      if (pointInButton(p.x, p.y, mobileTouch.dashButton, 18)) {
+        dashQ = true;
+        return true;
+      }
+
+      if (pointInButton(p.x, p.y, mobileTouch.jumpButton, 18)) {
+        jumpQ = true;
+        return true;
+      }
+
+      if (p.x < WIDTH * 0.42) {
+        mobileTouch.joystickId = id;
+        updateTouchJoystick(p.x, p.y);
+        return true;
+      }
+
+      if (pointInCircle(p.x, p.y, mobileTouch.aimBaseX, mobileTouch.aimBaseY, mobileTouch.aimRadius + 18)) {
+        mobileTouch.aimStickId = id;
+        updateAimJoystick(p.x, p.y);
+        return true;
+      }
+
+      return false;
+    }
+
+    function handleMobileTouchMove(id, clientX, clientY) {
+      if (!isTouchControlsVisible()) return false;
+      const p = getCanvasTouchPos(clientX, clientY);
+
+      if (id === mobileTouch.joystickId) {
+        updateTouchJoystick(p.x, p.y);
+        return true;
+      }
+
+      if (id === mobileTouch.aimStickId) {
+        updateAimJoystick(p.x, p.y);
+        return true;
+      }
+
+      return false;
+    }
+
+    function handleMobileTouchEnd(id) {
+      let handled = false;
+      if (id === mobileTouch.joystickId) {
+        releaseTouchJoystick();
+        handled = true;
+      }
+      if (id === mobileTouch.aimStickId) {
+        releaseAimJoystick();
+        handled = true;
+      }
+      if (id === mobileTouch.fireId) {
+        releaseTouchFire();
+        handled = true;
+      }
+      return handled;
+    }
+
     if (typeof canvas !== "undefined") {
       canvas.style.touchAction = "none";
 
       canvas.addEventListener("pointerdown", e => {
+        if (e.pointerType === "touch" && mobileInputMode === "touch") return;
+        if (e.pointerType === "touch" && mobileInputMode === null) mobileInputMode = "pointer";
         if (e.pointerType !== "touch" && navigator.maxTouchPoints <= 0) return;
-
-        const p = getCanvasPointerPos(e);
-
-        if (gamePaused) {
-          if (handleTouchPauseMenuTap(p.x, p.y)) {
-            e.preventDefault();
-          }
-          return;
-        }
-
-        if (!isTouchControlsVisible()) return;
-
-        layoutTouchControls();
-        requestMobileFullscreen();
-
-        // Pause button
-        if (pointInButton(p.x, p.y, mobileTouch.pauseButton)) {
-          touchPause();
+        const handled = handleMobileTouchStart(e.pointerId, e.clientX, e.clientY);
+        if (handled) {
+          try { canvas.setPointerCapture(e.pointerId); } catch (_) {}
           e.preventDefault();
-          return;
-        }
-
-        if (pointInButton(p.x, p.y, mobileTouch.fullscreenButton)) {
-          requestMobileFullscreen();
-          e.preventDefault();
-          return;
-        }
-
-        // Fire button
-        if (pointInButton(p.x, p.y, mobileTouch.fireButton, 18)) {
-          mobileTouch.fireId = e.pointerId;
-          mobileTouch.fireHeld = true;
-          canvas.setPointerCapture(e.pointerId);
-          e.preventDefault();
-          return;
-        }
-
-        if (pointInButton(p.x, p.y, mobileTouch.missileButton, 18)) {
-          fireMissile();
-          e.preventDefault();
-          return;
-        }
-
-        if (pointInButton(p.x, p.y, mobileTouch.dashButton, 18)) {
-          dashQ = true;
-          e.preventDefault();
-          return;
-        }
-
-        if (pointInButton(p.x, p.y, mobileTouch.jumpButton, 18)) {
-          jumpQ = true;
-          e.preventDefault();
-          return;
-        }
-
-        // Left joystick area
-        if (p.x < WIDTH * 0.42) {
-          mobileTouch.joystickId = e.pointerId;
-          updateTouchJoystick(p.x, p.y);
-          canvas.setPointerCapture(e.pointerId);
-          e.preventDefault();
-          return;
-        }
-
-        // Right aim joystick area
-        if (pointInCircle(p.x, p.y, mobileTouch.aimBaseX, mobileTouch.aimBaseY, mobileTouch.aimRadius)) {
-          mobileTouch.aimStickId = e.pointerId;
-          updateAimJoystick(p.x, p.y);
-          canvas.setPointerCapture(e.pointerId);
-          e.preventDefault();
-          return;
         }
       });
 
       canvas.addEventListener("pointermove", e => {
-        if (!isTouchControlsVisible()) return;
-
-        const p = getCanvasPointerPos(e);
-
-
-        if (e.pointerId === mobileTouch.joystickId) {
-          updateTouchJoystick(p.x, p.y);
+        if (e.pointerType === "touch" && mobileInputMode === "touch") return;
+        const handled = handleMobileTouchMove(e.pointerId, e.clientX, e.clientY);
+        if (handled) {
           e.preventDefault();
-          return;
-        }
-
-        if (e.pointerId === mobileTouch.aimStickId) {
-          updateAimJoystick(p.x, p.y);
-          e.preventDefault();
-          return;
         }
       });
 
       canvas.addEventListener("pointerup", e => {
-        if (e.pointerId === mobileTouch.joystickId) {
-          releaseTouchJoystick();
+        if (e.pointerType === "touch" && mobileInputMode === "touch") return;
+        if (handleMobileTouchEnd(e.pointerId)) {
           e.preventDefault();
-          return;
-        }
-        if (e.pointerId === mobileTouch.aimStickId) {
-          releaseAimJoystick();
-          e.preventDefault();
-          return;
-        }
-        if (e.pointerId === mobileTouch.fireId) {
-          releaseTouchFire();
-          e.preventDefault();
-          return;
         }
       });
 
       canvas.addEventListener("pointercancel", e => {
-        if (e.pointerId === mobileTouch.joystickId) releaseTouchJoystick();
-        if (e.pointerId === mobileTouch.aimStickId) releaseAimJoystick();
-        if (e.pointerId === mobileTouch.fireId) releaseTouchFire();
+        if (e.pointerType === "touch" && mobileInputMode === "touch") return;
+        handleMobileTouchEnd(e.pointerId);
       });
+
+      canvas.addEventListener("touchstart", e => {
+        mobileInputMode = "touch";
+        let handled = false;
+        for (const t of e.changedTouches) {
+          handled = handleMobileTouchStart(t.identifier, t.clientX, t.clientY) || handled;
+        }
+        if (handled) e.preventDefault();
+      }, { passive: false });
+
+      canvas.addEventListener("touchmove", e => {
+        let handled = false;
+        for (const t of e.changedTouches) {
+          handled = handleMobileTouchMove(t.identifier, t.clientX, t.clientY) || handled;
+        }
+        if (handled) e.preventDefault();
+      }, { passive: false });
+
+      canvas.addEventListener("touchend", e => {
+        let handled = false;
+        for (const t of e.changedTouches) {
+          handled = handleMobileTouchEnd(t.identifier) || handled;
+        }
+        if (handled) e.preventDefault();
+      }, { passive: false });
+
+      canvas.addEventListener("touchcancel", e => {
+        let handled = false;
+        for (const t of e.changedTouches) {
+          handled = handleMobileTouchEnd(t.identifier) || handled;
+        }
+        if (handled) e.preventDefault();
+      }, { passive: false });
     }
     const armCannonImg = new Image();
       armCannonImg.src =
