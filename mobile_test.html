@@ -2,6 +2,7 @@
 <html lang="ja">
 <head>
   <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover" />
   <title>Metroid Prime Lite</title>
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -44,7 +45,10 @@
     function fitCanvasToViewport() {
       if (typeof canvas === "undefined") return;
 
-      const scale = Math.min(window.innerWidth / WIDTH, window.innerHeight / HEIGHT);
+      const viewportW = window.visualViewport?.width || window.innerWidth;
+      const viewportH = window.visualViewport?.height || window.innerHeight;
+      const safeScale = 0.96;
+      const scale = Math.min(viewportW / WIDTH, viewportH / HEIGHT) * safeScale;
 
       canvas.style.position = "fixed";
       canvas.style.left = "50%";
@@ -55,13 +59,19 @@
       canvas.style.margin = "0";
       canvas.style.display = "block";
       canvas.style.touchAction = "none";
+      canvas.style.maxWidth = "96vw";
+      canvas.style.maxHeight = "96vh";
 
       document.documentElement.style.margin = "0";
       document.documentElement.style.padding = "0";
       document.documentElement.style.overflow = "hidden";
+      document.documentElement.style.width = "100%";
+      document.documentElement.style.height = "100%";
       document.body.style.margin = "0";
       document.body.style.padding = "0";
       document.body.style.overflow = "hidden";
+      document.body.style.width = "100%";
+      document.body.style.height = "100%";
       document.body.style.background = "#000";
     }
 
