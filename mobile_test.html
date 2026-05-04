@@ -199,7 +199,6 @@
     window.addEventListener("orientationchange", () => {
       setTimeout(fitCanvasToViewport, 250);
     });
-    fitCanvasToViewport();
 
     async function requestMobileFullscreen() {
       const target = document.documentElement;
@@ -258,6 +257,8 @@
 
       return ("ontouchstart" in window) || navigator.maxTouchPoints > 0;
     }
+
+    fitCanvasToViewport();
 
     function layoutTouchControls() {
       if (isPortraitTouchLayout()) {
