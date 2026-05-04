@@ -365,7 +365,7 @@
       if (Math.abs(dy) < 1.5) dy = 0;
     
       if ("angle" in player) {
-        player.angle += dx * sensitivity;
+        player.angle -= dx * sensitivity;
       }
     
       if ("pitch" in player) {
