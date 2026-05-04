@@ -2,10 +2,6 @@
 <html lang="ja">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover" />
-  <meta name="apple-mobile-web-app-capable" content="yes" />
-  <meta name="mobile-web-app-capable" content="yes" />
-  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
   <title>Wave-Prime</title>
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -48,74 +44,33 @@
     function fitCanvasToViewport() {
       if (typeof canvas === "undefined") return;
 
-      const viewportW = window.visualViewport?.width || window.innerWidth;
-      const viewportH = window.visualViewport?.height || window.innerHeight;
-      const portrait = viewportH > viewportW;
-      const safeScale = portrait ? 0.94 : 0.96;
-      const targetHeight = portrait ? viewportH * 0.62 : viewportH;
-      const scale = Math.min(viewportW / WIDTH, targetHeight / HEIGHT) * safeScale;
+      const scale = Math.min(window.innerWidth / WIDTH, window.innerHeight / HEIGHT);
 
       canvas.style.position = "fixed";
       canvas.style.left = "50%";
-      canvas.style.top = portrait ? "8px" : "50%";
+      canvas.style.top = "50%";
       canvas.style.width = `${WIDTH * scale}px`;
       canvas.style.height = `${HEIGHT * scale}px`;
-      canvas.style.transform = portrait ? "translateX(-50%)" : "translate(-50%, -50%)";
+      canvas.style.transform = "translate(-50%, -50%)";
       canvas.style.margin = "0";
       canvas.style.display = "block";
       canvas.style.touchAction = "none";
-      canvas.style.maxWidth = "96vw";
-      canvas.style.maxHeight = "96vh";
 
       document.documentElement.style.margin = "0";
       document.documentElement.style.padding = "0";
       document.documentElement.style.overflow = "hidden";
-      document.documentElement.style.width = "100%";
-      document.documentElement.style.height = "100%";
       document.body.style.margin = "0";
       document.body.style.padding = "0";
       document.body.style.overflow = "hidden";
-      document.body.style.width = "100%";
-      document.body.style.height = "100%";
       document.body.style.background = "#000";
     }
 
-    function enableViewportFit() {
-      window.addEventListener("resize", fitCanvasToViewport);
-      window.addEventListener("orientationchange", () => {
-        setTimeout(fitCanvasToViewport, 250);
-      });
-      fitCanvasToViewport();
-      setTimeout(() => window.scrollTo(0, 1), 120);
-      setTimeout(() => window.scrollTo(0, 1), 420);
-    }
+    // window.addEventListener("resize", fitCanvasToViewport);
+    // window.addEventListener("orientationchange", () => {
+    //   setTimeout(fitCanvasToViewport, 250);
+    // });
 
-      async function requestMobileFullscreen() {
-        const target = document.documentElement;
-      
-        try {
-          if (!document.fullscreenElement) {
-            const request =
-              target.requestFullscreen ||
-              target.webkitRequestFullscreen ||
-              target.msRequestFullscreen;
-      
-            if (request) {
-              await request.call(target);
-            }
-          }
-        } catch (err) {
-          console.warn("Fullscreen request failed:", err);
-        }
-      
-        try {
-          if (screen.orientation && screen.orientation.lock) {
-            await screen.orientation.lock("landscape");
-          }
-        } catch (_) {
-          // Some mobile browsers block orientation lock. Ignore safely.
-        }
-      }
+    // fitCanvasToViewport();
 
 
     const TOUCH_CONTROLS_ENABLED = true;
@@ -133,18 +88,14 @@
       aimStickId: null,
       aimBaseX: 0,
       aimBaseY: 0,
-      aimRadius: 54,
+      aimRadius: 58,
       aimKnobX: 0,
       aimKnobY: 0,
       aimAxisX: 0,
       aimAxisY: 0,
       fireHeld: false,
-      fireButton: { x: 0, y: 0, r: 48, label: "FIRE" },
-      missileButton: { x: 0, y: 0, r: 34, label: "MIS" },
-      dashButton: { x: 0, y: 0, r: 34, label: "DSH" },
-      jumpButton: { x: 0, y: 0, r: 34, label: "JMP" },
+      fireButton: { x: 0, y: 0, r: 54, label: "FIRE" },
       pauseButton: { x: 0, y: 0, r: 34, label: "II" },
-      fullscreenButton: { x: 0, y: 0, r: 34, label: "FULL" },
     };
 
     function isTouchControlsVisible() {
@@ -157,83 +108,21 @@
     }
 
     function layoutTouchControls() {
-      const isPortrait = window.innerHeight > window.innerWidth;
-      mobileTouch.isPortrait = isPortrait;
-      
-      if (isPortrait) {
-        const panelTop = HEIGHT * 0.68;
-        const panelH = HEIGHT - panelTop;
-      
-        mobileTouch.controlPanelTop = panelTop;
-      
-        const stickR = Math.min(WIDTH * 0.16, panelH * 0.32, 70);
-        const buttonR = Math.min(WIDTH * 0.07, panelH * 0.16, 34);
-      
-        // 左半分：移動カーソル
-        mobileTouch.joystickBaseX = WIDTH * 0.25;
-        mobileTouch.joystickBaseY = panelTop + panelH * 0.55;
-        mobileTouch.joystickRadius = stickR;
-      
-        // 右半分：AIMカーソル
-        mobileTouch.aimBaseX = WIDTH * 0.68;
-        mobileTouch.aimBaseY = panelTop + panelH * 0.48;
-        mobileTouch.aimRadius = stickR * 0.85;
-      
-        // 右半分：ボタン
-        mobileTouch.fireButton = {
-          x: WIDTH * 0.88,
-          y: panelTop + panelH * 0.36,
-          r: buttonR
-        };
-      
-        mobileTouch.missileButton = {
-          x: WIDTH * 0.78,
-          y: panelTop + panelH * 0.22,
-          r: buttonR
-        };
-      
-        mobileTouch.dashButton = {
-          x: WIDTH * 0.78,
-          y: panelTop + panelH * 0.72,
-          r: buttonR
-        };
-      
-        mobileTouch.jumpButton = {
-          x: WIDTH * 0.90,
-          y: panelTop + panelH * 0.62,
-          r: buttonR
-        };
-      
-        return;
-      }
-      const stickInsetX = WIDTH * 0.18;
-      const stickCenterY = HEIGHT * 0.5;
-      const ringOffset = 116;
-
-      mobileTouch.joyBaseX = stickInsetX;
-      mobileTouch.joyBaseY = stickCenterY;
+      mobileTouch.joyBaseX = WIDTH * 0.16;
+      mobileTouch.joyBaseY = HEIGHT * 0.78;
 
       if (!mobileTouch.joystickId) {
         mobileTouch.joyKnobX = mobileTouch.joyBaseX;
         mobileTouch.joyKnobY = mobileTouch.joyBaseY;
       }
 
-      mobileTouch.aimBaseX = WIDTH - stickInsetX;
-      mobileTouch.aimBaseY = stickCenterY;
-
-      mobileTouch.fireButton.x = mobileTouch.aimBaseX + ringOffset;
-      mobileTouch.fireButton.y = mobileTouch.aimBaseY - ringOffset;
+      mobileTouch.fireButton.x = WIDTH - 86;
+      mobileTouch.fireButton.y = HEIGHT - 92;
 
       mobileTouch.pauseButton.x = WIDTH - 48;
       mobileTouch.pauseButton.y = 48;
-      mobileTouch.fullscreenButton.x = WIDTH * 0.92;
-      mobileTouch.fullscreenButton.y = HEIGHT * 0.88;
-      mobileTouch.missileButton.x = mobileTouch.aimBaseX - ringOffset;
-      mobileTouch.missileButton.y = mobileTouch.aimBaseY - ringOffset;
-      mobileTouch.dashButton.x = mobileTouch.aimBaseX - ringOffset;
-      mobileTouch.dashButton.y = mobileTouch.aimBaseY + ringOffset;
-      mobileTouch.jumpButton.x = mobileTouch.aimBaseX + ringOffset;
-      mobileTouch.jumpButton.y = mobileTouch.aimBaseY + ringOffset;
+      mobileTouch.aimBaseX = WIDTH * 0.82;
+      mobileTouch.aimBaseY = HEIGHT * 0.58;
 
       if (!mobileTouch.aimStickId) {
         mobileTouch.aimKnobX = mobileTouch.aimBaseX;
@@ -247,23 +136,11 @@
       return dx * dx + dy * dy <= r * r;
     }
 
-    function pointInButton(px, py, btn, extra = 14) {
-      return pointInCircle(px, py, btn.x, btn.y, btn.r + extra);
-    }
-
     function getCanvasPointerPos(e) {
       const rect = canvas.getBoundingClientRect();
       return {
         x: (e.clientX - rect.left) * (WIDTH / rect.width),
         y: (e.clientY - rect.top) * (HEIGHT / rect.height),
-      };
-    }
-
-    function getCanvasTouchPos(clientX, clientY) {
-      const rect = canvas.getBoundingClientRect();
-      return {
-        x: (clientX - rect.left) * (WIDTH / rect.width),
-        y: (clientY - rect.top) * (HEIGHT / rect.height),
       };
     }
 
@@ -280,19 +157,20 @@
       const dx = px - mobileTouch.aimBaseX;
       const dy = py - mobileTouch.aimBaseY;
       const dist = Math.hypot(dx, dy) || 1;
-      const maxR = mobileTouch.aimRadius || 54;
-    
+      const maxR = mobileTouch.aimRadius;
+
       const clampedDist = Math.min(dist, maxR);
       const nx = dx / dist;
       const ny = dy / dist;
-    
-      // visual knob position
+
       mobileTouch.aimKnobX = mobileTouch.aimBaseX + nx * clampedDist;
       mobileTouch.aimKnobY = mobileTouch.aimBaseY + ny * clampedDist;
-    
-      // camera control axis
-      mobileTouch.aimAxisX = Math.max(-1, Math.min(1, dx / maxR));
-      mobileTouch.aimAxisY = Math.max(-1, Math.min(1, dy / maxR));
+
+      mobileTouch.aimAxisX = dx / maxR;
+      mobileTouch.aimAxisY = dy / maxR;
+
+      mobileTouch.aimAxisX = Math.max(-1, Math.min(1, mobileTouch.aimAxisX));
+      mobileTouch.aimAxisY = Math.max(-1, Math.min(1, mobileTouch.aimAxisY));
     }
 
     function releaseAimJoystick() {
@@ -379,58 +257,20 @@
       }
     }
 
-    function handleTouchPauseMenuTap(px, py) {
-      if (!gamePaused) return false;
-
-      const panelW = WIDTH * 0.46;
-      const panelH = HEIGHT * 0.58;
-      const panelX = (WIDTH - panelW) / 2;
-      const panelY = (HEIGHT - panelH) / 2;
-      const menuY = panelY + 318;
-      const itemStep = 42;
-
-      if (px < panelX || px > panelX + panelW || py < panelY || py > panelY + panelH) {
-        closePauseMenu();
-        return true;
-      }
-
-      for (let i = 0; i < PAUSE_MENU_ITEMS.length; i++) {
-        const itemCenterY = menuY + i * itemStep;
-        if (Math.abs(py - itemCenterY) <= 22) {
-          pauseMenuSelection = i;
-          activatePauseMenuSelection();
-          return true;
-        }
-      }
-
-      const resumeHintY = panelY + panelH - 24;
-      if (Math.abs(py - resumeHintY) <= 20) {
-        closePauseMenu();
-        return true;
-      }
-
-      return true;
-    }
-
     function updateTouchAim(dx, dy) {
+      // Minimal FPS-like touch aim.
+      // Uses common player.angle / player.pitch fields if they exist.
       if (typeof player === "undefined") return;
-    
-      // Horizontal aim should turn much more per swipe.
-      // Vertical aim stays calmer to avoid mobile camera instability.
-      const yawSensitivity = 0.006;
-      const pitchSensitivity = 0.00065;
-      const pitchLimit = 0.32;
-    
-      if (Math.abs(dx) < 1.2) dx = 0;
-      if (Math.abs(dy) < 1.2) dy = 0;
-    
+
+      const sensitivity = 0.0042;
+
       if ("angle" in player) {
-        player.angle -= dx * yawSensitivity;
+        player.angle += dx * sensitivity;
       }
-    
+
       if ("pitch" in player) {
-        player.pitch -= dy * pitchSensitivity;
-        player.pitch = Math.max(-pitchLimit, Math.min(pitchLimit, player.pitch));
+        player.pitch -= dy * sensitivity;
+        player.pitch = Math.max(-0.95, Math.min(0.95, player.pitch));
       }
     }
 
@@ -500,221 +340,107 @@
       }
 
       drawButton(mobileTouch.fireButton);
-      drawButton(mobileTouch.missileButton);
-      drawButton(mobileTouch.dashButton);
-      drawButton(mobileTouch.jumpButton);
-      drawButton(mobileTouch.fullscreenButton);
       drawButton(mobileTouch.pauseButton);
 
       ctx.restore();
-    }
-
-    function handleMobileTouchStart(id, clientX, clientY) {
-      const p = getCanvasTouchPos(clientX, clientY);
-
-      if (gamePaused) {
-        return handleTouchPauseMenuTap(p.x, p.y);
-      }
-
-      if (!isTouchControlsVisible()) return false;
-
-      layoutTouchControls();
-      if (pointInButton(p.x, p.y, mobileTouch.fullscreenButton, 24)) {
-        requestMobileFullscreen();
-        return true;
-      }
-      if (pointInButton(p.x, p.y, mobileTouch.pauseButton)) {
-        touchPause();
-        return true;
-      }
-
-      if (pointInButton(p.x, p.y, mobileTouch.fullscreenButton)) {
-        requestMobileFullscreen();
-        return true;
-      }
-
-      if (pointInButton(p.x, p.y, mobileTouch.fireButton, 18)) {
-        mobileTouch.fireId = id;
-        mobileTouch.fireHeld = true;
-        return true;
-      }
-
-      if (pointInButton(p.x, p.y, mobileTouch.missileButton, 18)) {
-        fireMissile();
-        return true;
-      }
-
-      if (pointInButton(p.x, p.y, mobileTouch.dashButton, 18)) {
-        dashQ = true;
-        return true;
-      }
-
-      if (pointInButton(p.x, p.y, mobileTouch.jumpButton, 18)) {
-        jumpQ = true;
-        return true;
-      }
-
-      // Left movement joystick
-      const isPortraitMoveArea =
-        mobileTouch.isPortrait &&
-        p.y >= mobileTouch.controlPanelTop &&
-        p.x < WIDTH * 0.5;
-      
-      const isLandscapeMoveArea =
-        !mobileTouch.isPortrait &&
-        p.x < WIDTH * 0.42;
-      
-      if (isPortraitMoveArea || isLandscapeMoveArea) {
-        mobileTouch.joystickId = id;
-        updateTouchJoystick(p.x, p.y);
-        return true;
-      }
-      
-      // Right AIM joystick fallback area.
-      // All action buttons are already checked above, so anything outside the left
-      // movement area should reliably become AIM control.
-      // 上から更にアプデ入ってます
-      if (p.x >= WIDTH * 0.40) {
-        mobileTouch.aimStickId = id;
-        mobileTouch.aimLastX = p.x;
-        mobileTouch.aimLastY = p.y;
-        updateAimJoystick(p.x, p.y);
-        return true;
-      }
-      
-      return false;
-      
-      return false;
-
-      return false;
-    }
-
-    function handleMobileTouchMove(id, clientX, clientY) {
-      if (!isTouchControlsVisible()) return false;
-      const p = getCanvasTouchPos(clientX, clientY);
-
-      if (id === mobileTouch.joystickId) {
-        updateTouchJoystick(p.x, p.y);
-        return true;
-      }
-
-    if (id === mobileTouch.aimStickId) {
-      const dx = p.x - mobileTouch.aimLastX;
-      const dy = p.y - mobileTouch.aimLastY;
-    
-      updateAimJoystick(p.x, p.y);
-      updateTouchAim(dx, dy);
-    
-      mobileTouch.aimLastX = p.x;
-      mobileTouch.aimLastY = p.y;
-    
-      return true;
-    }
-
-      return false;
-    }
-
-    function handleMobileTouchEnd(id) {
-      let handled = false;
-      if (id === mobileTouch.joystickId) {
-        releaseTouchJoystick();
-        handled = true;
-      }
-      if (id === mobileTouch.aimStickId) {
-        releaseAimJoystick();
-        handled = true;
-      }
-      if (id === mobileTouch.fireId) {
-        releaseTouchFire();
-        handled = true;
-      }
-      return handled;
     }
 
     if (typeof canvas !== "undefined") {
       canvas.style.touchAction = "none";
 
       canvas.addEventListener("pointerdown", e => {
-        if (e.pointerType === "touch") return;
+        if (!isTouchControlsVisible()) return;
         if (e.pointerType !== "touch" && navigator.maxTouchPoints <= 0) return;
-        const handled = handleMobileTouchStart(e.pointerId, e.clientX, e.clientY);
-        if (handled) {
-          try { canvas.setPointerCapture(e.pointerId); } catch (_) {}
+
+        layoutTouchControls();
+
+        const p = getCanvasPointerPos(e);
+
+        // Pause button
+        if (pointInCircle(p.x, p.y, mobileTouch.pauseButton.x, mobileTouch.pauseButton.y, mobileTouch.pauseButton.r)) {
+          touchPause();
           e.preventDefault();
+          return;
+        }
+
+        // Fire button
+        if (pointInCircle(p.x, p.y, mobileTouch.fireButton.x, mobileTouch.fireButton.y, mobileTouch.fireButton.r)) {
+          mobileTouch.fireId = e.pointerId;
+          mobileTouch.fireHeld = true;
+          canvas.setPointerCapture(e.pointerId);
+          e.preventDefault();
+          return;
+        }
+
+        // Left joystick area
+        if (p.x < WIDTH * 0.42) {
+          mobileTouch.joystickId = e.pointerId;
+          updateTouchJoystick(p.x, p.y);
+          canvas.setPointerCapture(e.pointerId);
+          e.preventDefault();
+          return;
+        }
+
+        // Right aim joystick area
+        if (p.x > WIDTH * 0.55) {
+          mobileTouch.aimStickId = e.pointerId;
+          updateAimJoystick(p.x, p.y);
+          canvas.setPointerCapture(e.pointerId);
+          e.preventDefault();
+          return;
         }
       });
 
       canvas.addEventListener("pointermove", e => {
-        if (e.pointerType === "touch") return;
-        const handled = handleMobileTouchMove(e.pointerId, e.clientX, e.clientY);
-        if (handled) {
+        if (!isTouchControlsVisible()) return;
+
+        const p = getCanvasPointerPos(e);
+
+
+        if (e.pointerId === mobileTouch.joystickId) {
+          updateTouchJoystick(p.x, p.y);
           e.preventDefault();
+          return;
+        }
+
+        if (e.pointerId === mobileTouch.aimStickId) {
+          updateAimJoystick(p.x, p.y);
+          e.preventDefault();
+          return;
         }
       });
 
       canvas.addEventListener("pointerup", e => {
-        if (e.pointerType === "touch") return;
-        if (handleMobileTouchEnd(e.pointerId)) {
+        if (e.pointerId === mobileTouch.joystickId) {
+          releaseTouchJoystick();
           e.preventDefault();
+          return;
+        }
+        if (e.pointerId === mobileTouch.aimStickId) {
+          releaseAimJoystick();
+          e.preventDefault();
+          return;
+        }
+        if (e.pointerId === mobileTouch.fireId) {
+          releaseTouchFire();
+          e.preventDefault();
+          return;
         }
       });
 
       canvas.addEventListener("pointercancel", e => {
-        if (e.pointerType === "touch") return;
-        handleMobileTouchEnd(e.pointerId);
+        if (e.pointerId === mobileTouch.joystickId) releaseTouchJoystick();
+        if (e.pointerId === mobileTouch.aimStickId) releaseAimJoystick();
+        if (e.pointerId === mobileTouch.fireId) releaseTouchFire();
       });
-
-      canvas.addEventListener("touchstart", e => {
-        let handled = false;
-        for (const t of e.changedTouches) {
-          handled = handleMobileTouchStart(t.identifier, t.clientX, t.clientY) || handled;
-        }
-        if (handled) e.preventDefault();
-      }, { passive: false });
-
-      canvas.addEventListener("touchmove", e => {
-        let handled = false;
-        for (const t of e.changedTouches) {
-          handled = handleMobileTouchMove(t.identifier, t.clientX, t.clientY) || handled;
-        }
-        if (handled) e.preventDefault();
-      }, { passive: false });
-
-      canvas.addEventListener("touchend", e => {
-        let handled = false;
-        for (const t of e.changedTouches) {
-          handled = handleMobileTouchEnd(t.identifier) || handled;
-        }
-        if (handled) e.preventDefault();
-      }, { passive: false });
-
-      canvas.addEventListener("touchcancel", e => {
-        let handled = false;
-        for (const t of e.changedTouches) {
-          handled = handleMobileTouchEnd(t.identifier) || handled;
-        }
-        if (handled) e.preventDefault();
-      }, { passive: false });
     }
-    const ARM_CANNON_RELATIVE_PATH = "assets/images/arm_cannon_blue.png";
-    const ARM_CANNON_ABSOLUTE_PATH = "file:///Users/yuikitagawa/Documents/metroidvania-prototype/game/assets/images/arm_cannon_blue.png";
     const armCannonImg = new Image();
-      armCannonImg.src =
-        location.href.includes('/Projects/job_search/') || location.href.includes('/waveprime_workspace/')
-          ? ARM_CANNON_ABSOLUTE_PATH
-          : ARM_CANNON_RELATIVE_PATH;
-      armCannonImg.onerror = () => {
-        if (armCannonImg.src !== ARM_CANNON_ABSOLUTE_PATH) armCannonImg.src = ARM_CANNON_ABSOLUTE_PATH;
-      };
+      armCannonImg.src = "assets/images/arm_cannon_blue.png";
     const enemyGirlImg = new Image();
-      enemyGirlImg.src = location.href.includes('/Projects/job_search/') || location.href.includes('/waveprime_workspace/')
+      enemyGirlImg.src = location.href.includes('/Projects/job_search/')
         ? "file:///Users/yuikitagawa/Documents/metroidvania-prototype/game/ManualEdit/assets/images/enemy_girl.png"
-        : "assets/images/enemy_girl.png";
-    const armCannonSound = new Audio(
-      location.href.includes('/Projects/job_search/') || location.href.includes('/waveprime_workspace/')
-        ? 'file:///Users/yuikitagawa/Documents/metroidvania-prototype/game/ManualEdit/assets/sounds/arm_cannon_sound.ogg'
-        : 'ManualEdit/assets/sounds/arm_cannon_sound.ogg'
-    );
+        : "ManualEdit/assets/images/enemy_girl.png";
+    const armCannonSound = new Audio('ManualEdit/assets/sounds/arm_cannon_sound.ogg');
     armCannonSound.volume = 0.7;
     const floorTileImg = new Image();
       let floorTilePattern = null;
@@ -723,13 +449,9 @@
         floorTilePattern = ctx.createPattern(floorTileImg, 'repeat');
       };
 
-      floorTileImg.src =
-        location.href.includes('/Projects/job_search/') || location.href.includes('/waveprime_workspace/')
-          ? 'file:///Users/yuikitagawa/Documents/metroidvania-prototype/game/assets/images/floor_blue_grass_tile.png'
-          : 'assets/images/floor_blue_grass_tile.png';
+      floorTileImg.src = 'assets/images/floor_blue_grass_tile.png';
     const WIDTH = canvas.width;
     const HEIGHT = canvas.height;
-    enableViewportFit();
     let visorMode = "normal"; // "normal" or "xray"
     let prevDpadLeftPressed = false;
     let prevDpadRightPressed = false;
@@ -757,15 +479,15 @@
     const PLAYER_CHARGE_COOLDOWN = 22;
     const PLAYER_SHOT_FX_TIME = 20;
     const PLAYER_CHARGE_BEAM_TIME = 28;
-    const PLAYER_MISSILE_MAX_CHARGES = 5;
-    const PLAYER_MISSILE_RECHARGE_TIME = 48;
+    const PLAYER_MISSILE_MAX_AMMO = 15;
+    const PLAYER_MISSILE_REGEN_TIME = 170;
     const PLAYER_MISSILE_START_SPEED = 0.055;
     const PLAYER_MISSILE_MAX_SPEED = 0.16;
     const PLAYER_MISSILE_ACCEL = 0.0045;
     const PLAYER_MISSILE_LIFE = 110;
-    const PLAYER_MISSILE_DAMAGE = 3;
-    const PLAYER_MISSILE_SPLASH_RADIUS = 1;
-    const PLAYER_MISSILE_SPLASH_DAMAGE = 3;
+    const PLAYER_MISSILE_DAMAGE = 8;
+    const PLAYER_MISSILE_SPLASH_RADIUS = 2.1;
+    const PLAYER_MISSILE_SPLASH_DAMAGE = 10;
     const LOCK_ON_RANGE = 20;
     const ENEMY_PIXEL_WAVE_BLOCK = 4;
     const ENEMY_PIXEL_WAVE_ALPHA = 0.18;
@@ -901,39 +623,20 @@
     let goalFlashTimer = 0;
     let currentWeapon = 'normal';
     const goalOrb = { x: 53.5, y: 16.0, orbZ: 6.2 };
-    const ENABLE_GOAL_ORB = false;
     const STAGE_NAME = 'Room_1_StartArea';
     const PILLAR_A_SEGMENTS = 12;
     const DIFFICULTY_CONFIGS = {
-      easy: {
-        label: 'EASY',
-        enemyApproachMul: 0.84,
-        enemyReturnMul: 0.88,
-        enemyCooldownMul: 1.45,
-        enemyDamageMul: 0.55,
-        enemyBulletSpeedMul: 0.82,
-        playerDamageMul: 1.7,
-        playerMaxHp: 159,
-      },
       normal: {
         label: 'NORMAL',
         enemyApproachMul: 1,
         enemyReturnMul: 1,
         enemyCooldownMul: 1,
-        enemyDamageMul: 1,
-        enemyBulletSpeedMul: 1,
-        playerDamageMul: 1,
-        playerMaxHp: 99,
       },
       hard: {
         label: 'HARD',
         enemyApproachMul: 1.08,
         enemyReturnMul: 1.08,
         enemyCooldownMul: 0.84,
-        enemyDamageMul: 1.08,
-        enemyBulletSpeedMul: 1.08,
-        playerDamageMul: 1,
-        playerMaxHp: 99,
       },
     };
     let selectedDifficulty = 'normal';
@@ -946,8 +649,8 @@
     let hpSettingInput = "99";
     let pauseMenuSelection = 0;
     let enemyUpdateTick = 0;
-    let playerMissileCharges = PLAYER_MISSILE_MAX_CHARGES;
-    let playerMissileRechargeTimer = 0;
+    let playerMissileAmmo = PLAYER_MISSILE_MAX_AMMO;
+    let playerMissileRegenTimer = 0;
     const managedListeners = [];
     let animationFrameId = null;
     let loopStarted = false;
@@ -1070,10 +773,7 @@
     }
 
     function toggleSelectedDifficulty(delta = 1) {
-      const order = ['easy', 'normal', 'hard'];
-      const currentIndex = Math.max(0, order.indexOf(selectedDifficulty));
-      const nextIndex = (currentIndex + (delta >= 0 ? 1 : -1) + order.length) % order.length;
-      selectedDifficulty = order[nextIndex];
+      selectedDifficulty = selectedDifficulty === 'normal' ? 'hard' : 'normal';
     }
 
     function addManagedListener(target, type, handler, options) {
@@ -1310,7 +1010,7 @@
       height: 0,
       groundHeight: 0,
       vz: 0,
-      hp: 299,
+      hp: 99,
       maxHp: 99,
       dashGlow: 0,
       shootCD: 0,
@@ -1328,7 +1028,6 @@
     };
 
     function restartGame() {
-      const difficulty = getDifficultyConfig();
       player.x = PLAYER_START.x;
       player.y = PLAYER_START.y;
       player.angle = PLAYER_START.angle;
@@ -1338,8 +1037,7 @@
       player.groundHeight = 0;
       player.vz = 0;
 
-      player.maxHp = difficulty.playerMaxHp || 99;
-      player.hp = player.maxHp;
+      player.hp = player.maxHp || 99;
       player.dashGlow = 0;
       player.shootCD = 0;
       player.hitFlash = 0;
@@ -1356,8 +1054,8 @@
       playerMissiles.length = 0;
       missileBursts.length = 0;
       enemyUpdateTick = 0;
-      playerMissileCharges = PLAYER_MISSILE_MAX_CHARGES;
-      playerMissileRechargeTimer = 0;
+      playerMissileAmmo = PLAYER_MISSILE_MAX_AMMO;
+      playerMissileRegenTimer = 0;
       for (const e of enemies) {
         e.x = e.homeX;
         e.y = e.homeY;
@@ -1786,7 +1484,7 @@
         vz: 0,
         vx: 0, vy: 0,
         patrolMinX, patrolMaxX,
-        hp: 50, maxHp: 50,
+        hp: 24, maxHp: 24,
         dead: false, invTimer: 0,
         shootCD: 0, angle: 0, stationary: false,
         meleeCD: 0, meleeFx: 0,
@@ -2174,8 +1872,8 @@
       keys._right = gp.axes[0] < -0.28;
       keys._forward = gp.axes[1] < -0.28;
       keys._back = gp.axes[1] > 0.28;
-      keys._turnL = gp.axes[2] > 0.28;
-      keys._turnR = gp.axes[2] < -0.28;
+      keys._turnL = gp.axes[2] > 0.28 || b(4);
+      keys._turnR = gp.axes[2] < -0.28 || b(5);
       keys._aimUp = gp.axes[3] < -0.22;
       keys._aimDown = gp.axes[3] > 0.22;
       keys._shootHeld = b(2);
@@ -2184,7 +1882,6 @@
       if (b(0) && !gpPrev[0]) jumpQ = true;
       if (b(7) && !gpPrev[7]) dashQ = true;
       if (b(2) && !gpPrev[2]) shootQ = true;
-      if (b(5) && !gpPrev[5]) fireMissile();
       gpPrev = {};
       const pressedButtonIds = [];
 
@@ -2355,18 +2052,13 @@
         if (Math.hypot(player.knockX, player.knockY) < 0.004) { player.knockX = 0; player.knockY = 0; }
       }
 
-      if (ENABLE_GOAL_ORB) {
-        const _playerMidZ = player.height + 0.9;
-        const _d3 = Math.sqrt((player.x-goalOrb.x)**2 + (player.y-goalOrb.y)**2 + (_playerMidZ-goalOrb.orbZ)**2);
-        if (!goalReached && _d3 < 2.5) {
-          goalReached = true;
-          goalFlashTimer = 300;
-        }
-        if (goalFlashTimer > 0) goalFlashTimer--;
-      } else {
-        goalReached = false;
-        goalFlashTimer = 0;
+      const _playerMidZ = player.height + 0.9;
+      const _d3 = Math.sqrt((player.x-goalOrb.x)**2 + (player.y-goalOrb.y)**2 + (_playerMidZ-goalOrb.orbZ)**2);
+      if (!goalReached && _d3 < 2.5) {
+        goalReached = true;
+        goalFlashTimer = 300;
       }
+      if (goalFlashTimer > 0) goalFlashTimer--;
 
       if (jumpQ && (player.height <= player.groundHeight + 0.001 || player.jumpCount < 2)) {
         player.vz = JUMP_VEL;
@@ -2407,14 +2099,14 @@
         player.chargeLevel = 0;
       }
       shootQ = false;
-      if (playerMissileCharges < PLAYER_MISSILE_MAX_CHARGES) {
-        playerMissileRechargeTimer++;
-        if (playerMissileRechargeTimer >= PLAYER_MISSILE_RECHARGE_TIME) {
-          playerMissileCharges++;
-          playerMissileRechargeTimer = 0;
+      if (playerMissileAmmo < PLAYER_MISSILE_MAX_AMMO) {
+        playerMissileRegenTimer++;
+        if (playerMissileRegenTimer >= PLAYER_MISSILE_REGEN_TIME) {
+          playerMissileAmmo++;
+          playerMissileRegenTimer = 0;
         }
       } else {
-        playerMissileRechargeTimer = 0;
+        playerMissileRegenTimer = 0;
       }
       missileQ = false;
       player.wasShootHeld = shootHeldNow;
@@ -2429,15 +2121,6 @@
       enemyUpdateTick++;
       for (const e of enemies) {
         if (e.dead) continue;
-        if (!Number.isFinite(e.x) || !Number.isFinite(e.y) || !Number.isFinite(e.z)) {
-          e.x = e.homeX;
-          e.y = e.homeY;
-          e.z = e.homeZ;
-          e.state = 'idle';
-          e.stateTimer = 0;
-          e.patternTimer = 0;
-          e.patternBurstCooldown = 0;
-        }
         if (e.state === 'dying') {
           e.deathTimer = Math.max(0, e.deathTimer - 1);
           e.deathAlpha = clamp(e.deathTimer / ENEMY_DEATH_TIME, 0, 1);
@@ -2566,8 +2249,7 @@
             const strikeDist = Math.hypot(player.x - strikeX, player.y - strikeY);
 
             if (!e.attackHit && strikeDist <= ENEMY_ATTACK_REACH && player.invTimer === 0) {
-              const meleeDamage = Math.max(1, Math.round(ENEMY_ATTACK_DAMAGE * getDifficultyConfig().enemyDamageMul));
-              player.hp = Math.max(0, player.hp - meleeDamage);
+              player.hp = Math.max(0, player.hp - ENEMY_ATTACK_DAMAGE);
               player.hitFlash = 15;
               player.invTimer = 28;
               player.knockX += e.attackDirX * KNOCKBACK_SPD * 2.2;
@@ -2726,8 +2408,9 @@
     }
 
     function fireMissile() {
-      if (gamePaused || gameOver || playerMissileCharges <= 0) return;
-      playerMissileCharges--;
+      if (gamePaused || gameOver || playerMissileAmmo <= 0) return;
+      playerMissileAmmo--;
+      playerMissileRegenTimer = 0;
       // Keep missile motion easy to read in the 2.5D view:
       // spawn it a bit ahead of the player and fly mostly parallel to the floor.
       const ang = player.angle;
@@ -2768,8 +2451,7 @@
         const ez = e.z + e.h * 0.5;
         const dist = Math.hypot(ex - missile.x, ey - missile.y, ez - missile.z);
         if (dist > PLAYER_MISSILE_SPLASH_RADIUS) continue;
-        const damageScale = getDifficultyConfig().playerDamageMul ?? 1;
-        const damage = Math.max(1, Math.round((dist < 0.7 ? PLAYER_MISSILE_DAMAGE : PLAYER_MISSILE_SPLASH_DAMAGE) * damageScale));
+        const damage = dist < 0.7 ? PLAYER_MISSILE_DAMAGE : PLAYER_MISSILE_SPLASH_DAMAGE;
         e.hp = Math.max(0, e.hp - damage);
         e.invTimer = 20;
         if (e.hp <= 0) beginEnemyDeath(e);
@@ -2798,9 +2480,7 @@
       if (wallHit && wallHit.hitType === 'enemy' && wallHit.enemy) {
         const e = wallHit.enemy;
         if (e.invTimer === 0 && e.state !== 'dying') {
-          const damageScale = getDifficultyConfig().playerDamageMul ?? 1;
-          const baseDamage = charged ? Math.max(PLAYER_CHARGE_DAMAGE, Math.round(PLAYER_CHARGE_DAMAGE * chargeLevel)) : PLAYER_SHOT_DAMAGE;
-          const damage = Math.max(1, Math.round(baseDamage * damageScale));
+          const damage = charged ? Math.max(PLAYER_CHARGE_DAMAGE, Math.round(PLAYER_CHARGE_DAMAGE * chargeLevel)) : PLAYER_SHOT_DAMAGE;
           e.hp = Math.max(0, e.hp - damage);
           e.invTimer = 30;
           if (e.hp <= 0) beginEnemyDeath(e);
@@ -2848,23 +2528,20 @@
     }
 
     function spawnEnemyBullet(e, angle, speed = 0.12, size = 1.0, wave = false, options = {}) {
-      const difficulty = getDifficultyConfig();
       const perpAng = angle + Math.PI / 2;
       const startX = options.startX ?? (e.x + e.w / 2);
       const startY = options.startY ?? (e.y + e.d / 2);
       const startZ = options.startZ ?? (e.z + e.h * (options.zFactor ?? 0.7) + (options.zOffset ?? 0));
-      const adjustedSpeed = speed * (difficulty.enemyBulletSpeedMul ?? 1);
-      const adjustedDamage = Math.max(1, Math.round((options.damage ?? 5) * (difficulty.enemyDamageMul ?? 1)));
       enemyBullets.push({
         x: startX, y: startY,
-        vx: Math.cos(angle) * adjustedSpeed,
-        vy: Math.sin(angle) * adjustedSpeed,
+        vx: Math.cos(angle) * speed,
+        vy: Math.sin(angle) * speed,
         z: startZ,
         vz: options.vz ?? 0,
         life: options.life ?? 90,
         maxLife: options.life ?? 90,
         size,
-        damage: adjustedDamage,
+        damage: options.damage ?? 5,
         tint: options.tint ?? (wave ? 'wave' : 'single'),
         wave, wavePerpX: Math.cos(perpAng), wavePerpY: Math.sin(perpAng),
         arc: options.arc ?? false,
@@ -3127,10 +2804,6 @@
       if (gamePaused || gameOver) return;
       for (let i = enemyBullets.length - 1; i >= 0; i--) {
         const b = enemyBullets[i];
-        if (!Number.isFinite(b.x) || !Number.isFinite(b.y) || !Number.isFinite(b.z)) {
-          enemyBullets.splice(i, 1);
-          continue;
-        }
         b.x += b.vx;
         b.y += b.vy;
         b.z += b.vz || 0;
@@ -3168,10 +2841,6 @@
       if (gamePaused || gameOver) return;
       for (let i = playerMissiles.length - 1; i >= 0; i--) {
         const m = playerMissiles[i];
-        if (!Number.isFinite(m.x) || !Number.isFinite(m.y) || !Number.isFinite(m.z)) {
-          playerMissiles.splice(i, 1);
-          continue;
-        }
         m.age = (m.age || 0) + 1;
         m.speed = Math.min(PLAYER_MISSILE_MAX_SPEED, m.speed + PLAYER_MISSILE_ACCEL);
 
@@ -3444,7 +3113,7 @@ ctx.fillRect(minX, minY, w, h);
       // use the existing blue grass tile image as the main surface,
       // then add only a lightweight animated tint on top.
       // This is much cheaper than fully procedural per-tile wave coloring.
-      const T = 0.4; // larger tiles = fewer projected quads
+      const T = 0.5; // larger tiles = fewer projected quads
       const px = player.x, py = player.y;
       const txMin = Math.floor((px - 20) / T);
       const txMax = Math.ceil((px + 20) / T);
@@ -4005,29 +3674,15 @@ ctx.fillRect(minX, minY, w, h);
       ctx.stroke();
 
       // ribs
-      drawPlayerHpOrbs(WIDTH / 2 - 120, 35);
-      function drawPlayerHpOrbs(x, y) {
-        const HP_PER_ORB = 100;
-      
-        const maxHp = Math.max(HP_PER_ORB, player.maxHp || HP_PER_ORB);
-        const currentHp = Math.max(0, player.hp || 0);
-      
-        // 100HP = 1 orb, 200HP = 2 orbs, 300HP = 3 orbs
-        const orbCount = Math.max(1, Math.ceil(maxHp / HP_PER_ORB));
-      
-        const r = 5;
-        const gap = 14;
-      
-        for (let i = 0; i < orbCount; i++) {
-          const hpInOrb = Math.max(
-            0,
-            Math.min(HP_PER_ORB, currentHp - i * HP_PER_ORB)
-          );
-      
-          const fillRatio = hpInOrb / HP_PER_ORB;
-      
-          drawHpOrb(x + i * gap, y, r, fillRatio);
-        }
+      for (let i = 0; i < 4; i++) {
+        const t = i / 3;
+        const y = chest.y + bodyH * (0.04 + t * 0.16);
+        const w = ribW * (1 - t * 0.12);
+
+        ctx.beginPath();
+        ctx.moveTo(chest.x - w, y);
+        ctx.quadraticCurveTo(chest.x, y + 5, chest.x + w, y);
+        ctx.stroke();
       }
 
       // front claws
@@ -4170,13 +3825,13 @@ ctx.fillRect(minX, minY, w, h);
         let ang = Math.atan2(cy - player.y, cx - player.x) - player.angle;
         while (ang > Math.PI) ang -= Math.PI * 2;
         while (ang < -Math.PI) ang += Math.PI * 2;
-        if (Math.abs(ang) > HALF_FOV + 0.28) continue;
+        if (Math.abs(ang) > HALF_FOV + 0.18) continue;
         const dist = Math.hypot(cx - player.x, cy - player.y);
         if (dist < 0.3) continue;
         const correctedDist = dist * Math.cos(ang);
         const screenRatio = (ang + HALF_FOV) / FOV;
         const rayIndex = clamp(Math.floor(screenRatio * (RAYS - 1)), 0, RAYS - 1);
-        if (!isLocked && depthBuffer[rayIndex] < correctedDist - 0.22) continue;
+        if (depthBuffer[rayIndex] < correctedDist - 0.1) continue;
 
         const flash = e.invTimer > 0 && Math.floor(e.invTimer / 4) % 2 === 1;
         const meleeFx = e.meleeFx > 0;
@@ -4194,25 +3849,6 @@ ctx.fillRect(minX, minY, w, h);
         } else {
           drawEnemyGirlSprite(e, flash, isLocked, meleeFx, isDying ? e.deathAlpha : 1, isDying);
         }
-      }
-    }
-
-    function getEnemyEyeGlow(e) {
-      if (e.state === 'dying') return 0;
-      const pulse = 0.72 + Math.sin(performance.now() * 0.016) * 0.28;
-      switch (e.state) {
-        case 'charge':
-        case 'teleport_charge':
-        case 'overhead_charge':
-          return 0.5 + pulse * 0.45;
-        case 'lunge_attack':
-        case 'teleport_arc_burst':
-        case 'overhead_fire':
-          return 0.95;
-        case 'recover':
-          return 0.28;
-        default:
-          return Math.max(0, e.orbGlow * 0.2, e.overheadGlow * 0.25);
       }
     }
 
@@ -4245,24 +3881,6 @@ ctx.fillRect(minX, minY, w, h);
       }
 
       drawEnemyPixelWaveOverlay(e, drawX, drawY, spriteW, spriteH);
-
-      const eyeGlow = getEnemyEyeGlow(e);
-      if (eyeGlow > 0.05) {
-        const leftEyeX = drawX + spriteW * 0.42;
-        const rightEyeX = drawX + spriteW * 0.58;
-        const eyeY = drawY + spriteH * 0.27;
-        const eyeR = Math.max(4, spriteW * 0.06);
-        ctx.save();
-        ctx.shadowColor = `rgba(140,255,255,${0.95 * eyeGlow})`;
-        ctx.shadowBlur = 16 + eyeR * 1.5;
-        ctx.fillStyle = `rgba(120,255,240,${0.36 * eyeGlow})`;
-        ctx.beginPath(); ctx.arc(leftEyeX, eyeY, eyeR * 2.2, 0, Math.PI * 2); ctx.fill();
-        ctx.beginPath(); ctx.arc(rightEyeX, eyeY, eyeR * 2.2, 0, Math.PI * 2); ctx.fill();
-        ctx.fillStyle = `rgba(240,255,255,${0.92 * eyeGlow})`;
-        ctx.beginPath(); ctx.arc(leftEyeX, eyeY, eyeR, 0, Math.PI * 2); ctx.fill();
-        ctx.beginPath(); ctx.arc(rightEyeX, eyeY, eyeR, 0, Math.PI * 2); ctx.fill();
-        ctx.restore();
-      }
 
       if (e.overheadCharge > 0 || e.state === 'overhead_fire') {
         const headOrb = project3D(cx, cy, e.z + e.h + 0.42 + e.overheadCharge * 0.18);
@@ -4905,14 +4523,18 @@ ctx.fillRect(minX, minY, w, h);
     function drawGun() {
       if (!armCannonImg.complete || armCannonImg.naturalWidth === 0) return;
 
-      const cannonWidth = WIDTH * 0.42;
+      // まずは小さめに固定
+      const cannonWidth = WIDTH * 0.37;
       const cannonHeight = cannonWidth * (armCannonImg.naturalHeight / armCannonImg.naturalWidth);
 
-      const x = WIDTH - cannonWidth - 82;
-      const y = HEIGHT - cannonHeight + 34;
+      // 右下に置く
+      const x = WIDTH - cannonWidth - 150;
+      const y = HEIGHT - cannonHeight + 10;
 
       ctx.save();
       ctx.globalAlpha = 0.95;
+
+      // 反転・回転なしでまず安定表示
       ctx.drawImage(
         armCannonImg,
         x,
@@ -5059,7 +4681,7 @@ ctx.fillRect(minX, minY, w, h);
       ctx.strokeStyle = player.lockTarget ? '#ffd768' : (hit ? '#ffd7a0' : '#dfeadf');
       ctx.lineWidth = 2;
       const aimReticleOffsetX = (!player.lockTarget && isTouchControlsVisible()) ? mobileTouch.aimAxisX * 46 : 0;
-      const aimReticleOffsetY = 0;
+      const aimReticleOffsetY = (!player.lockTarget && isTouchControlsVisible()) ? mobileTouch.aimAxisY * 34 : 0;
       const cx = WIDTH / 2 + aimReticleOffsetX;
       const cy = HEIGHT / 2 + aimReticleOffsetY;
       const gap = 12;
@@ -5156,7 +4778,7 @@ ctx.fillRect(minX, minY, w, h);
       }
 
       // goal orb
-      if (ENABLE_GOAL_ORB && !goalReached && goalOrb.x >= x0 && goalOrb.x <= x1 && goalOrb.y >= y0 && goalOrb.y <= y1) {
+      if (!goalReached && goalOrb.x >= x0 && goalOrb.x <= x1 && goalOrb.y >= y0 && goalOrb.y <= y1) {
         const gox = ox + (goalOrb.x - x0) * scale;
         const goy = oy + (goalOrb.y - y0) * scale;
         const gt = Date.now() / 600;
@@ -5387,54 +5009,6 @@ ctx.fillRect(minX, minY, w, h);
 
       ctx.restore();
     }
-    function drawHpOrb(x, y, r, fillRatio) {
-  const fill = Math.max(0, Math.min(1, fillRatio));
-
-  ctx.save();
-
-  // outer shell
-  ctx.beginPath();
-  ctx.arc(x, y, r, 0, Math.PI * 2);
-  ctx.fillStyle = "rgba(20, 45, 65, 0.65)";
-  ctx.fill();
-  ctx.strokeStyle = "rgba(160, 230, 255, 0.85)";
-  ctx.lineWidth = 1.5;
-  ctx.stroke();
-
-  // filled amount
-  if (fill > 0) {
-    ctx.save();
-    ctx.beginPath();
-//    ctx.arc(x, y, r - 1, 0, Math.PI * 2);
-    drawPlayerHpOrbs(WIDTH / 2 - 120, 35);
-    ctx.clip();
-
-    const fillHeight = (r * 2) * fill;
-    ctx.fillStyle = "rgba(170, 235, 255, 0.95)";
-    ctx.fillRect(x - r, y + r - fillHeight, r * 2, fillHeight);
-
-    ctx.restore();
-  }
-
-  ctx.restore();
-}
-
-    function drawPlayerHpOrbs(x, y) {
-      const HP_PER_ORB = 100;
-      const maxHp = Math.max(HP_PER_ORB, player.maxHp || HP_PER_ORB);
-      const currentHp = Math.max(0, player.hp || 0);
-      const orbCount = Math.max(1, Math.ceil(maxHp / HP_PER_ORB));
-    
-      const r = 5;
-      const gap = 14;
-    
-      for (let i = 0; i < orbCount; i++) {
-        const hpInThisOrb = currentHp - i * HP_PER_ORB;
-        const fillRatio = hpInThisOrb / HP_PER_ORB;
-    
-        drawHpOrb(x + i * gap, y, r, fillRatio);
-      }
-    }
     function drawHUD() {
       ctx.fillStyle = "#ffffff";
       ctx.font = "14px sans-serif";
@@ -5471,10 +5045,7 @@ ctx.fillRect(minX, minY, w, h);
       ctx.fillText(`Difficulty: ${getDifficultyConfig().label}`, 18, 86);
       ctx.fillText(`World2 Active: ${ACTIVE_WORLD === 'World2'}`, 18, 102);
       ctx.fillText(`Weapon: ${currentWeapon === 'wave' ? 'WAVE' : 'NORMAL'}`, 18, 118);
-      const missileReady = playerMissileCharges > 0;
-      const missileRechargeRate = playerMissileCharges >= PLAYER_MISSILE_MAX_CHARGES
-        ? 1
-        : (playerMissileRechargeTimer / PLAYER_MISSILE_RECHARGE_TIME);
+      ctx.fillText(`MISSILE ${playerMissileAmmo} / ${PLAYER_MISSILE_MAX_AMMO}`, 18, 134);
       ctx.fillText(`ENERGY ${player.hp}`, 18, 150);
       ctx.fillText(`AIM ${Math.round((-player.pitch / MAX_PITCH) * 100)}`, 18, 166);
       const gp = [...navigator.getGamepads()].find(g => g);
@@ -5487,27 +5058,8 @@ ctx.fillRect(minX, minY, w, h);
       ctx.fillRect(18, 188, 180 * (player.hp / player.maxHp), 8);
       ctx.fillStyle = 'rgba(226,213,182,0.14)';
       ctx.fillRect(18, 202, 180, 6);
-
-      const missileHudX = WIDTH - 184;
-      const missileHudY = 118;
-      ctx.textAlign = 'left';
-      ctx.fillStyle = '#efe8d2';
-      ctx.fillText(`MISSILE ${playerMissileCharges} / ${PLAYER_MISSILE_MAX_CHARGES}`, missileHudX, missileHudY);
-      ctx.fillStyle = 'rgba(226,213,182,0.14)';
-      ctx.fillRect(missileHudX, missileHudY + 10, 150, 6);
-      ctx.fillStyle = 'rgba(122,240,180,0.95)';
-      ctx.fillRect(missileHudX, missileHudY + 10, 150 * (playerMissileCharges / PLAYER_MISSILE_MAX_CHARGES), 6);
-      if (playerMissileCharges < PLAYER_MISSILE_MAX_CHARGES) {
-        ctx.fillStyle = 'rgba(226,213,182,0.14)';
-        ctx.fillRect(missileHudX, missileHudY + 24, 150, 4);
-        ctx.fillStyle = '#f5c97a';
-        ctx.fillRect(missileHudX, missileHudY + 24, 150 * missileRechargeRate, 4);
-        ctx.fillStyle = '#f5c97a';
-        ctx.fillText(`RECHARGE ${PLAYER_MISSILE_RECHARGE_TIME - playerMissileRechargeTimer}`, missileHudX, missileHudY + 42);
-      } else {
-        ctx.fillStyle = '#dff7b1';
-        ctx.fillText('READY', missileHudX, missileHudY + 42);
-      }
+      ctx.fillStyle = '#e2b45e';
+      ctx.fillRect(18, 202, 180 * (playerMissileAmmo / PLAYER_MISSILE_MAX_AMMO), 6);
 
       ctx.fillStyle = 'rgba(239,232,210,0.78)';
       ctx.fillText(`Labels ${showDebugLabels ? 'ON' : 'OFF'} (L)`, 18, 196);
@@ -5676,7 +5228,6 @@ ctx.fillRect(minX, minY, w, h);
     }
 
     function drawGoalOrb() {
-      if (!ENABLE_GOAL_ORB) return;
       if (goalReached) return;
       const t = Date.now() / 1000;
       const bobZ = goalOrb.orbZ + Math.sin(t * 2.2) * 0.2;
@@ -5731,7 +5282,7 @@ ctx.fillRect(minX, minY, w, h);
       }
 
       canvas.style.filter = visorMode === "xray" ? "grayscale(1) brightness(1.18) contrast(1.08)" : "none";
-      // updateTouchAimFromStick();
+      updateTouchAimFromStick();
       updatePlayer();
       updateEnemies();
       updateEnemyShots();
@@ -5785,7 +5336,7 @@ ctx.fillRect(minX, minY, w, h);
       drawMinimap();
       drawGoalOrb();
       drawDamageFlash();
-      if (ENABLE_GOAL_ORB && goalFlashTimer > 0) {
+      if (goalFlashTimer > 0) {
         const alpha = Math.min(1, goalFlashTimer / 60) * 0.9;
         ctx.fillStyle = `rgba(200,255,80,${alpha * 0.14})`;
         ctx.fillRect(0, 0, WIDTH, HEIGHT);
