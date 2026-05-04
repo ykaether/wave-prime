@@ -356,19 +356,21 @@
     }
 
     function updateTouchAim(dx, dy) {
-      // Minimal FPS-like touch aim.
-      // Uses common player.angle / player.pitch fields if they exist.
       if (typeof player === "undefined") return;
-
-      const sensitivity = 0.00025;
-
+    
+      const sensitivity = 0.00065;
+      const pitchLimit = 0.32;
+    
+      if (Math.abs(dx) < 1.5) dx = 0;
+      if (Math.abs(dy) < 1.5) dy = 0;
+    
       if ("angle" in player) {
         player.angle += dx * sensitivity;
       }
-
+    
       if ("pitch" in player) {
         player.pitch -= dy * sensitivity;
-        player.pitch = Math.max(-0.45, Math.min(0.95, player.pitch));
+        player.pitch = Math.max(-pitchLimit, Math.min(pitchLimit, player.pitch));
       }
     }
 
@@ -536,8 +538,15 @@
           return;
         }
 
-          if (e.pointerId === mobileTouch.aimStickId) {
-          updateAimJoystick(p.x, p.y);
+        if (e.pointerId === mobileTouch.aimId) {
+          const dx = p.x - mobileTouch.aimLastX;
+          const dy = p.y - mobileTouch.aimLastY;
+        
+          updateTouchAim(dx, dy);
+        
+          mobileTouch.aimLastX = p.x;
+          mobileTouch.aimLastY = p.y;
+        
           e.preventDefault();
           return;
         }
