@@ -364,18 +364,21 @@
     function updateTouchAim(dx, dy) {
       if (typeof player === "undefined") return;
     
-      const sensitivity = 0.00065;
+      // Horizontal aim should turn much more per swipe.
+      // Vertical aim stays calmer to avoid mobile camera instability.
+      const yawSensitivity = 0.00195;
+      const pitchSensitivity = 0.00065;
       const pitchLimit = 0.32;
     
       if (Math.abs(dx) < 1.2) dx = 0;
       if (Math.abs(dy) < 1.2) dy = 0;
     
       if ("angle" in player) {
-        player.angle -= dx * sensitivity;
+        player.angle += dx * yawSensitivity;
       }
     
       if ("pitch" in player) {
-        player.pitch -= dy * sensitivity;
+        player.pitch -= dy * pitchSensitivity;
         player.pitch = Math.max(-pitchLimit, Math.min(pitchLimit, player.pitch));
       }
     }
@@ -1220,7 +1223,7 @@
       height: 0,
       groundHeight: 0,
       vz: 0,
-      hp: 99,
+      hp: 299,
       maxHp: 99,
       dashGlow: 0,
       shootCD: 0,
