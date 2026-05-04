@@ -3,6 +3,9 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
   <title>Metroid Prime Lite</title>
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -81,6 +84,25 @@
         setTimeout(fitCanvasToViewport, 250);
       });
       fitCanvasToViewport();
+      setTimeout(() => window.scrollTo(0, 1), 120);
+      setTimeout(() => window.scrollTo(0, 1), 420);
+    }
+
+    function requestMobileFullscreen() {
+      const target = canvas || document.documentElement;
+      const request =
+        target.requestFullscreen ||
+        target.webkitRequestFullscreen ||
+        target.webkitRequestFullScreen ||
+        target.mozRequestFullScreen ||
+        target.msRequestFullscreen;
+      if (typeof request === "function") {
+        try {
+          request.call(target);
+        } catch (_) {}
+      }
+      setTimeout(() => window.scrollTo(0, 1), 80);
+      setTimeout(() => window.scrollTo(0, 1), 260);
     }
 
 
@@ -106,7 +128,11 @@
       aimAxisY: 0,
       fireHeld: false,
       fireButton: { x: 0, y: 0, r: 54, label: "FIRE" },
+      missileButton: { x: 0, y: 0, r: 30, label: "MIS" },
+      dashButton: { x: 0, y: 0, r: 30, label: "DSH" },
+      jumpButton: { x: 0, y: 0, r: 28, label: "JMP" },
       pauseButton: { x: 0, y: 0, r: 34, label: "II" },
+      fullscreenButton: { x: 0, y: 0, r: 34, label: "FULL" },
     };
 
     function isTouchControlsVisible() {
@@ -132,8 +158,16 @@
 
       mobileTouch.pauseButton.x = WIDTH - 48;
       mobileTouch.pauseButton.y = 48;
+      mobileTouch.fullscreenButton.x = WIDTH - 120;
+      mobileTouch.fullscreenButton.y = 48;
       mobileTouch.aimBaseX = WIDTH * 0.82;
       mobileTouch.aimBaseY = HEIGHT * 0.58;
+      mobileTouch.missileButton.x = mobileTouch.aimBaseX + 92;
+      mobileTouch.missileButton.y = mobileTouch.aimBaseY - 54;
+      mobileTouch.dashButton.x = mobileTouch.aimBaseX + 88;
+      mobileTouch.dashButton.y = mobileTouch.aimBaseY + 34;
+      mobileTouch.jumpButton.x = mobileTouch.aimBaseX - 18;
+      mobileTouch.jumpButton.y = mobileTouch.aimBaseY - 94;
 
       if (!mobileTouch.aimStickId) {
         mobileTouch.aimKnobX = mobileTouch.aimBaseX;
@@ -384,7 +418,11 @@
       }
 
       drawButton(mobileTouch.fireButton);
+      drawButton(mobileTouch.missileButton);
+      drawButton(mobileTouch.dashButton);
+      drawButton(mobileTouch.jumpButton);
       drawButton(mobileTouch.pauseButton);
+      drawButton(mobileTouch.fullscreenButton);
 
       ctx.restore();
     }
@@ -407,10 +445,17 @@
         if (!isTouchControlsVisible()) return;
 
         layoutTouchControls();
+        requestMobileFullscreen();
 
         // Pause button
         if (pointInCircle(p.x, p.y, mobileTouch.pauseButton.x, mobileTouch.pauseButton.y, mobileTouch.pauseButton.r)) {
           touchPause();
+          e.preventDefault();
+          return;
+        }
+
+        if (pointInCircle(p.x, p.y, mobileTouch.fullscreenButton.x, mobileTouch.fullscreenButton.y, mobileTouch.fullscreenButton.r)) {
+          requestMobileFullscreen();
           e.preventDefault();
           return;
         }
@@ -420,6 +465,24 @@
           mobileTouch.fireId = e.pointerId;
           mobileTouch.fireHeld = true;
           canvas.setPointerCapture(e.pointerId);
+          e.preventDefault();
+          return;
+        }
+
+        if (pointInCircle(p.x, p.y, mobileTouch.missileButton.x, mobileTouch.missileButton.y, mobileTouch.missileButton.r)) {
+          fireMissile();
+          e.preventDefault();
+          return;
+        }
+
+        if (pointInCircle(p.x, p.y, mobileTouch.dashButton.x, mobileTouch.dashButton.y, mobileTouch.dashButton.r)) {
+          dashQ = true;
+          e.preventDefault();
+          return;
+        }
+
+        if (pointInCircle(p.x, p.y, mobileTouch.jumpButton.x, mobileTouch.jumpButton.y, mobileTouch.jumpButton.r)) {
+          jumpQ = true;
           e.preventDefault();
           return;
         }
