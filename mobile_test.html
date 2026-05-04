@@ -356,7 +356,7 @@
       // Uses common player.angle / player.pitch fields if they exist.
       if (typeof player === "undefined") return;
 
-      const sensitivity = 0.0005;
+      const sensitivity = 0.00025;
 
       if ("angle" in player) {
         player.angle += dx * sensitivity;
@@ -364,7 +364,7 @@
 
       if ("pitch" in player) {
         player.pitch -= dy * sensitivity;
-        player.pitch = Math.max(-0.95, Math.min(0.95, player.pitch));
+        player.pitch = Math.max(-0.45, Math.min(0.95, player.pitch));
       }
     }
 
