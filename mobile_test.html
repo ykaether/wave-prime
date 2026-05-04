@@ -134,7 +134,6 @@
       pauseButton: { x: 0, y: 0, r: 34, label: "II" },
       fullscreenButton: { x: 0, y: 0, r: 34, label: "FULL" },
     };
-    let mobileInputMode = null;
 
     function isTouchControlsVisible() {
       if (!TOUCH_CONTROLS_ENABLED) return false;
@@ -455,7 +454,6 @@
       if (!isTouchControlsVisible()) return false;
 
       layoutTouchControls();
-      requestMobileFullscreen();
 
       if (pointInButton(p.x, p.y, mobileTouch.pauseButton)) {
         touchPause();
@@ -494,7 +492,7 @@
         return true;
       }
 
-      if (pointInCircle(p.x, p.y, mobileTouch.aimBaseX, mobileTouch.aimBaseY, mobileTouch.aimRadius + 18)) {
+      if (pointInCircle(p.x, p.y, mobileTouch.aimBaseX, mobileTouch.aimBaseY, mobileTouch.aimRadius)) {
         mobileTouch.aimStickId = id;
         updateAimJoystick(p.x, p.y);
         return true;
@@ -541,8 +539,7 @@
       canvas.style.touchAction = "none";
 
       canvas.addEventListener("pointerdown", e => {
-        if (e.pointerType === "touch" && mobileInputMode === "touch") return;
-        if (e.pointerType === "touch" && mobileInputMode === null) mobileInputMode = "pointer";
+        if (e.pointerType === "touch") return;
         if (e.pointerType !== "touch" && navigator.maxTouchPoints <= 0) return;
         const handled = handleMobileTouchStart(e.pointerId, e.clientX, e.clientY);
         if (handled) {
@@ -552,7 +549,7 @@
       });
 
       canvas.addEventListener("pointermove", e => {
-        if (e.pointerType === "touch" && mobileInputMode === "touch") return;
+        if (e.pointerType === "touch") return;
         const handled = handleMobileTouchMove(e.pointerId, e.clientX, e.clientY);
         if (handled) {
           e.preventDefault();
@@ -560,19 +557,18 @@
       });
 
       canvas.addEventListener("pointerup", e => {
-        if (e.pointerType === "touch" && mobileInputMode === "touch") return;
+        if (e.pointerType === "touch") return;
         if (handleMobileTouchEnd(e.pointerId)) {
           e.preventDefault();
         }
       });
 
       canvas.addEventListener("pointercancel", e => {
-        if (e.pointerType === "touch" && mobileInputMode === "touch") return;
+        if (e.pointerType === "touch") return;
         handleMobileTouchEnd(e.pointerId);
       });
 
       canvas.addEventListener("touchstart", e => {
-        mobileInputMode = "touch";
         let handled = false;
         for (const t of e.changedTouches) {
           handled = handleMobileTouchStart(t.identifier, t.clientX, t.clientY) || handled;
