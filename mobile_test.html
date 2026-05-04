@@ -202,7 +202,7 @@
       const dx = px - mobileTouch.aimBaseX;
       const dy = py - mobileTouch.aimBaseY;
       const dist = Math.hypot(dx, dy) || 1;
-      const maxR = mobileTouch.aimRadius: 38;
+      const maxR = mobileTouch.aimRadius;
 
       const clampedDist = Math.min(dist, maxR);
       const nx = dx / dist;
