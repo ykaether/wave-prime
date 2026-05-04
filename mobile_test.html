@@ -88,22 +88,32 @@
       setTimeout(() => window.scrollTo(0, 1), 420);
     }
 
-    function requestMobileFullscreen() {
-      const target = canvas || document.documentElement;
-      const request =
-        target.requestFullscreen ||
-        target.webkitRequestFullscreen ||
-        target.webkitRequestFullScreen ||
-        target.mozRequestFullScreen ||
-        target.msRequestFullscreen;
-      if (typeof request === "function") {
+      async function requestMobileFullscreen() {
+        const target = document.documentElement;
+      
         try {
-          request.call(target);
-        } catch (_) {}
+          if (!document.fullscreenElement) {
+            const request =
+              target.requestFullscreen ||
+              target.webkitRequestFullscreen ||
+              target.msRequestFullscreen;
+      
+            if (request) {
+              await request.call(target);
+            }
+          }
+        } catch (err) {
+          console.warn("Fullscreen request failed:", err);
+        }
+      
+        try {
+          if (screen.orientation && screen.orientation.lock) {
+            await screen.orientation.lock("landscape");
+          }
+        } catch (_) {
+          // Some mobile browsers block orientation lock. Ignore safely.
+        }
       }
-      setTimeout(() => window.scrollTo(0, 1), 80);
-      setTimeout(() => window.scrollTo(0, 1), 260);
-    }
 
 
     const TOUCH_CONTROLS_ENABLED = true;
@@ -454,7 +464,10 @@
       if (!isTouchControlsVisible()) return false;
 
       layoutTouchControls();
-
+      if (pointInButton(p.x, p.y, mobileTouch.fullscreenButton, 24)) {
+        requestMobileFullscreen();
+        return true;
+      }
       if (pointInButton(p.x, p.y, mobileTouch.pauseButton)) {
         touchPause();
         return true;
@@ -5570,5 +5583,65 @@ ctx.fillRect(minX, minY, w, h);
 
     ensureLoopRunning();
   </script>
+      <style>
+      #forceFullscreenBtn {
+        position: fixed;
+        top: 10px;
+        right: 96px;
+        z-index: 999999;
+        width: 58px;
+        height: 38px;
+        border: 1px solid rgba(150, 230, 255, 0.9);
+        border-radius: 10px;
+        background: rgba(10, 25, 40, 0.78);
+        color: rgba(235, 255, 255, 0.95);
+        font: bold 12px monospace;
+        touch-action: manipulation;
+      }
+    </style>
+    
+    <button id="forceFullscreenBtn" type="button">FULL</button>
+    
+    <script>
+      (function () {
+        const btn = document.getElementById("forceFullscreenBtn");
+    
+        async function forceFullscreen(e) {
+          if (e) {
+            e.preventDefault();
+            e.stopPropagation();
+          }
+    
+          const target = document.documentElement;
+    
+          try {
+            if (!document.fullscreenElement) {
+              const request =
+                target.requestFullscreen ||
+                target.webkitRequestFullscreen ||
+                target.msRequestFullscreen;
+    
+              if (request) {
+                await request.call(target);
+              }
+            }
+    
+            if (screen.orientation && screen.orientation.lock) {
+              try {
+                await screen.orientation.lock("landscape");
+              } catch (_) {
+                // Some mobile browsers block orientation lock.
+              }
+            }
+          } catch (err) {
+            console.warn("Fullscreen failed:", err);
+          }
+        }
+    
+        btn.addEventListener("pointerdown", forceFullscreen, { passive: false });
+        btn.addEventListener("touchstart", forceFullscreen, { passive: false });
+        btn.addEventListener("click", forceFullscreen);
+      })();
+    </script>
 </body>
 </html>
