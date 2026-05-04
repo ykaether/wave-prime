@@ -114,6 +114,9 @@
       aimAxisY: 0,
       fireButton: { x: 0, y: 0, r: 54, label: "FIRE" },
       pauseButton: { x: 0, y: 0, r: 34, label: "II" },
+      dashButton: { x: 0, y: 0, r: 34, label: "DASH" },
+      jumpButton: { x: 0, y: 0, r: 34, label: "JUMP" },
+      missileButton: { x: 0, y: 0, r: 34, label: "MIS" },
     };
 
     function isTouchControlsVisible() {
@@ -130,8 +133,22 @@
       // Origin: top-left. Higher Y = lower on screen.
     
       // Left movement stick: lower-left
-      // function layoutTouchControls() { 消していいやつ？
   // Left movement stick: around vertical center
+        // Extra action buttons around the right aim stick
+      if (mobileTouch.dashButton) {
+        mobileTouch.dashButton.x = WIDTH * 0.70;
+        mobileTouch.dashButton.y = HEIGHT * 0.66;
+      }
+    
+      if (mobileTouch.jumpButton) {
+        mobileTouch.jumpButton.x = WIDTH * 0.86;
+        mobileTouch.jumpButton.y = HEIGHT * 0.66;
+      }
+    
+      if (mobileTouch.missileButton) {
+        mobileTouch.missileButton.x = WIDTH * 0.72;
+        mobileTouch.missileButton.y = HEIGHT * 0.40;
+      }
       mobileTouch.joyBaseX = WIDTH * 0.20;
       mobileTouch.joyBaseY = HEIGHT * 0.52;
     
@@ -275,6 +292,54 @@
       }
     }
 
+    function tapVirtualKey(code, duration = 140) {
+      if (typeof keys === "undefined") return;
+    
+      keys[code] = true;
+    
+      window.setTimeout(() => {
+        keys[code] = false;
+      }, duration);
+    }
+    
+    function touchJump() {
+      // まずは一般的なJump入力としてSpaceを使う
+      if (typeof jumpQ !== "undefined") {
+        jumpQ = true;
+        return;
+      }
+    
+      tapVirtualKey("Space", 140);
+    }
+    
+    function touchDash() {
+      // まずは一般的なDash入力としてShiftLeftを使う
+      if (typeof dashQ !== "undefined") {
+        dashQ = true;
+        return;
+      }
+    
+      if (typeof dashPressed !== "undefined") {
+        dashPressed = true;
+        window.setTimeout(() => {
+          dashPressed = false;
+        }, 160);
+        return;
+      }
+    
+      tapVirtualKey("ShiftLeft", 160);
+    }
+    
+    function touchMissile() {
+      if (typeof fireMissile === "function") {
+        fireMissile();
+        return;
+      }
+    
+      // 念のためKeyRにもフォールバック
+      tapVirtualKey("KeyR", 140);
+    }
+
     function touchPause() {
       if (typeof openPauseMenu === "function") {
         openPauseMenu();
@@ -302,6 +367,7 @@
         player.pitch = Math.max(-0.95, Math.min(0.95, player.pitch));
       }
     }
+
 
     function drawTouchControls() {
       if (!isTouchControlsVisible()) return;
@@ -352,6 +418,7 @@
       ctx.textBaseline = "middle";
       ctx.fillText("AIM", mobileTouch.aimBaseX, mobileTouch.aimBaseY - mobileTouch.aimRadius - 14);
 
+      
       function drawButton(btn) {
         ctx.beginPath();
         ctx.arc(btn.x, btn.y, btn.r, 0, Math.PI * 2);
@@ -370,7 +437,9 @@
 
       drawButton(mobileTouch.fireButton);
       drawButton(mobileTouch.pauseButton);
-
+      drawButton(mobileTouch.dashButton);
+      drawButton(mobileTouch.jumpButton);
+      drawButton(mobileTouch.missileButton);
       ctx.restore();
     }
 
@@ -395,6 +464,26 @@
         // Fire button
         if (pointInCircle(p.x, p.y, mobileTouch.fireButton.x, mobileTouch.fireButton.y, mobileTouch.fireButton.r)) {
           touchFire();
+          e.preventDefault();
+          return;
+        }
+            // Dash button
+        if (pointInCircle(p.x, p.y, mobileTouch.dashButton.x, mobileTouch.dashButton.y, mobileTouch.dashButton.r)) {
+          touchDash();
+          e.preventDefault();
+          return;
+        }
+    
+        // Jump button
+        if (pointInCircle(p.x, p.y, mobileTouch.jumpButton.x, mobileTouch.jumpButton.y, mobileTouch.jumpButton.r)) {
+          touchJump();
+          e.preventDefault();
+          return;
+        }
+    
+        // Missile button
+        if (pointInCircle(p.x, p.y, mobileTouch.missileButton.x, mobileTouch.missileButton.y, mobileTouch.missileButton.r)) {
+          touchMissile();
           e.preventDefault();
           return;
         }
