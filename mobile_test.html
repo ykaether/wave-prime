@@ -492,7 +492,9 @@
         return true;
       }
 
-      if (pointInCircle(p.x, p.y, mobileTouch.aimBaseX, mobileTouch.aimBaseY, mobileTouch.aimRadius)) {
+      const aimHitRadius = mobileTouch.aimRadius * 1.6;
+
+      if (pointInCircle(p.x, p.y, mobileTouch.aimBaseX, mobileTouch.aimBaseY, aimHitRadius)) {
         mobileTouch.aimStickId = id;
         updateAimJoystick(p.x, p.y);
         return true;
