@@ -21,12 +21,52 @@
       font-family: monospace;
       color: #9ffbf5;
     }
+      
     canvas {
       border: 2px solid #42ecff;
       image-rendering: pixelated;
       box-shadow:
         0 0 18px rgba(66, 236, 255, 0.35),
         0 0 42px rgba(255, 92, 194, 0.14);
+    }
+      #gameWrap {
+  position: relative;
+  display: inline-block;
+}
+
+    #controllerNotice {
+      position: absolute;
+      top: 18px;
+      right: 18px;
+      max-width: 300px;
+      padding: 10px 14px;
+      background: rgba(5, 10, 22, 0.88);
+      border: 2px solid #7ee7ff;
+      box-shadow: 0 0 12px rgba(126, 231, 255, 0.3);
+      color: #ffffff;
+      font-family: Arial, sans-serif;
+      font-size: 15px;
+      line-height: 1.4;
+      z-index: 20;
+    }#gameWrap {
+      position: relative;
+      display: inline-block;
+    }
+    
+    #controllerNotice {
+      position: absolute;
+      top: 18px;
+      right: 18px;
+      max-width: 300px;
+      padding: 10px 14px;
+      background: rgba(5, 10, 22, 0.88);
+      border: 2px solid #7ee7ff;
+      box-shadow: 0 0 12px rgba(126, 231, 255, 0.3);
+      color: #ffffff;
+      font-family: Arial, sans-serif;
+      font-size: 15px;
+      line-height: 1.4;
+      z-index: 20;
     }
     #hud {
       margin-top: 10px;
@@ -36,7 +76,14 @@
   </style>
 </head>
 <body>
-  <canvas id="game" width="1280" height="720"></canvas>
+    <div id="gameWrap">
+    <canvas id="game" width="1280" height="720"></canvas>
+
+  <div id="controllerNotice">
+    Best played using a Nintendo Switch Pro Controller.<br>
+    Try connecting it via Bluetooth.
+  </div>
+</div>
   <div id="hud">PC: WASD move · Mouse look · Left Click shoot/charge · Right Click lock-on · Space jump · Shift dash · R missile · 1/2 weapon · V visor · Esc/P pause · Pro Controller supported</div>
 
   <script>
