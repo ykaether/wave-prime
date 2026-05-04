@@ -1,3 +1,8 @@
+    const enemyGirlImg = new Image();
+      enemyGirlImg.src = "assets/images/enemy_girl.png";
+    const armCannonSound = new Audio('ManualEdit/assets/sounds/arm_cannon_sound.ogg');
+      armCannonSound.volume = 0.7;
+
 <!DOCTYPE html>
 <html lang="ja">
 <head>
@@ -39,12 +44,10 @@
     const ctx = canvas.getContext('2d');
     const armCannonImg = new Image();
       armCannonImg.src = "assets/images/arm_cannon_blue.png";
-
     const enemyGirlImg = new Image();
       enemyGirlImg.src = "assets/images/enemy_girl.png";
     const armCannonSound = new Audio('ManualEdit/assets/sounds/arm_cannon_sound.ogg');
       armCannonSound.volume = 0.7;
-    
     const floorTileImg = new Image();
       let floorTilePattern = null;
 
@@ -68,8 +71,8 @@
     const DASH_MULT = 2.3;
     const AIM_PITCH_SPEED = 0.014;
     const MAX_PITCH = 0.42;
-    const MOUSE_SENS_X = 0.0028;
-    const MOUSE_SENS_Y = 0.0022;
+    const MOUSE_SENS_X = 0.0025;
+    const MOUSE_SENS_Y = 0.0020;
     const CAMERA_EYE_HEIGHT = 1.65;
     const DEFAULT_CAMERA_PITCH = -0.09;
     const JUMP_VEL = 0.162;
@@ -211,6 +214,7 @@
     let mouseShootHeld = false;
     let mouseLockHeld = false;
     let pointerLocked = false;
+    let pointerLockStatusText = "Click game screen to enable mouse control";
     let gpPrev = {};
     let debugPressedButtons = "none";
     let showDebugLabels = false;
@@ -355,19 +359,40 @@
 
     function handlePointerLockChange() {
       pointerLocked = document.pointerLockElement === canvas;
+      pointerLockStatusText = pointerLocked
+        ? "Mouse control active"
+        : "Click game screen to enable mouse control";
+      if (!pointerLocked) {
+        clearMouseInputState();
+      }
     }
 
-    function requestGamePointerLock() {
-      if (!gameStarted || gamePaused || gameOver || cleanupDone) return;
+    function handlePointerLockError() {
+      pointerLocked = false;
+      pointerLockStatusText = "Mouse control blocked. Click the game screen again.";
+      clearMouseInputState();
+    }
+
+    function requestMouseLockFromUserGesture() {
+      if (gamePaused || gameOver || cleanupDone) return;
       if (!hasPointerLock() && canvas.requestPointerLock) {
-        canvas.requestPointerLock();
+        const result = canvas.requestPointerLock();
+        if (result && typeof result.then === 'function') {
+          result.catch((err) => {
+            pointerLockStatusText = "Mouse control blocked. Click the game screen again.";
+            console.warn("Pointer lock failed:", err);
+          });
+        }
       }
     }
 
     function releaseGamePointerLock() {
       if (hasPointerLock() && document.exitPointerLock) {
         document.exitPointerLock();
+        return;
       }
+      pointerLocked = false;
+      pointerLockStatusText = "Click game screen to enable mouse control";
     }
 
     function moveStartMenuSelection(delta) {
@@ -536,14 +561,6 @@
     }
 
     function handlePointerDown(e) {
-      if (!gameStarted) {
-        startGame();
-        if (e.target === canvas) {
-          requestGamePointerLock();
-        }
-        e.preventDefault();
-        return;
-      }
       if (gameOver) {
         restartGame();
         e.preventDefault();
@@ -552,30 +569,21 @@
       if (gamePaused) {
         return;
       }
-      if (e.target === canvas) {
-        requestGamePointerLock();
-      }
     }
 
     function handleMouseDown(e) {
       if (!gameStarted) {
         startGame();
-        requestGamePointerLock();
-        e.preventDefault();
-        return;
       }
       if (gamePaused || gameOver || cleanupDone) return;
-      requestGamePointerLock();
+      requestMouseLockFromUserGesture();
       if (e.button === 0) {
         mouseShootHeld = true;
-        e.preventDefault();
-        return;
       }
       if (e.button === 2) {
         mouseLockHeld = true;
-        e.preventDefault();
-        return;
       }
+      e.preventDefault();
     }
 
     function handleMouseUp(e) {
@@ -827,6 +835,7 @@
       addManagedListener(document, 'mousemove', handleMouseMove);
       addManagedListener(canvas, 'contextmenu', handleContextMenu);
       addManagedListener(document, 'pointerlockchange', handlePointerLockChange);
+      addManagedListener(document, 'pointerlockerror', handlePointerLockError);
       addManagedListener(window, 'pointerdown', forceRestartIfNeeded, true);
       addManagedListener(window, 'mousedown', forceRestartIfNeeded, true);
       addManagedListener(window, 'touchstart', forceRestartIfNeeded, true);
@@ -4642,37 +4651,39 @@ ctx.fillRect(minX, minY, w, h);
       const gp = [...navigator.getGamepads()].find(g => g);
       ctx.fillStyle = gp ? '#d9e7bc' : 'rgba(217,231,188,0.35)';
       ctx.fillText(gp ? `PAD ${gp.id.slice(0, 24)}` : 'PAD none', 18, 182);
+      ctx.fillStyle = pointerLocked ? '#8fffd3' : '#ffd9a8';
+      ctx.fillText(`Mouse: ${pointerLockStatusText}`, 18, 198);
 
       ctx.fillStyle = 'rgba(226,213,182,0.18)';
-      ctx.fillRect(18, 188, 180, 8);
+      ctx.fillRect(18, 206, 180, 8);
       ctx.fillStyle = '#c97e58';
-      ctx.fillRect(18, 188, 180 * (player.hp / player.maxHp), 8);
+      ctx.fillRect(18, 206, 180 * (player.hp / player.maxHp), 8);
       ctx.fillStyle = 'rgba(226,213,182,0.14)';
-      ctx.fillRect(18, 202, 180, 6);
+      ctx.fillRect(18, 220, 180, 6);
       ctx.fillStyle = '#e2b45e';
-      ctx.fillRect(18, 202, 180 * (playerMissileAmmo / PLAYER_MISSILE_MAX_AMMO), 6);
+      ctx.fillRect(18, 220, 180 * (playerMissileAmmo / PLAYER_MISSILE_MAX_AMMO), 6);
 
       ctx.fillStyle = 'rgba(239,232,210,0.78)';
-      ctx.fillText(`Labels ${showDebugLabels ? 'ON' : 'OFF'} (L)`, 18, 196);
-      ctx.fillText(`Height Guides ${showHeightGuides ? 'ON' : 'OFF'} (H)`, 18, 212);
-      ctx.fillText(`Grid ${showCoordinateGrid ? 'ON' : 'OFF'} (G)`, 18, 228);
-      if (currentPillarA && !currentPillarA.hidden) ctx.fillText(`Pillar A Segments ${PILLAR_A_SEGMENTS} · Height Axis z`, 18, 244);
-      ctx.fillText(`Pillar A visible: ${pillarAVisible ? 'YES' : 'NO'}`, 18, 260);
-      if (currentPillarA && !currentPillarA.hidden) ctx.fillText(`Pillar A cell ${currentPillarA.tileX},${currentPillarA.tileY} = ${pillarBaseCell}`, 18, 276);
-      ctx.fillText(`Player Start Cell: ${playerStartCell}`, 18, 292);
-      ctx.fillText(`Player Cell: ${playerCellLabel} (${playerCellIndices.cellX},${playerCellIndices.cellY})`, 18, 308);
-      ctx.fillText(`Player Position: ${playerCoord}`, 18, 324);
-      ctx.fillText(`Player Speed: move ${MOVE_SPEED.toFixed(3)} / strafe ${STRAFE_SPEED.toFixed(3)}`, 18, 340);
-      ctx.fillText(`Pillar_A Height: ${currentPillarA ? currentPillarA.h.toFixed(2) : 'none'} | Pillar_B Height: ${pillarB ? pillarB.h.toFixed(2) : 'none'}`, 18, 356);
-      ctx.fillText(`Target Cell: ${targetCellLabel}`, 18, 372);
-      ctx.fillText(`Target Position: ${targetCoord}`, 18, 388);
-      ctx.fillText(`Target Object: ${targetObject}`, 18, 404);
+      ctx.fillText(`Labels ${showDebugLabels ? 'ON' : 'OFF'} (L)`, 18, 214);
+      ctx.fillText(`Height Guides ${showHeightGuides ? 'ON' : 'OFF'} (H)`, 18, 230);
+      ctx.fillText(`Grid ${showCoordinateGrid ? 'ON' : 'OFF'} (G)`, 18, 246);
+      if (currentPillarA && !currentPillarA.hidden) ctx.fillText(`Pillar A Segments ${PILLAR_A_SEGMENTS} · Height Axis z`, 18, 262);
+      ctx.fillText(`Pillar A visible: ${pillarAVisible ? 'YES' : 'NO'}`, 18, 278);
+      if (currentPillarA && !currentPillarA.hidden) ctx.fillText(`Pillar A cell ${currentPillarA.tileX},${currentPillarA.tileY} = ${pillarBaseCell}`, 18, 294);
+      ctx.fillText(`Player Start Cell: ${playerStartCell}`, 18, 310);
+      ctx.fillText(`Player Cell: ${playerCellLabel} (${playerCellIndices.cellX},${playerCellIndices.cellY})`, 18, 326);
+      ctx.fillText(`Player Position: ${playerCoord}`, 18, 342);
+      ctx.fillText(`Player Speed: move ${MOVE_SPEED.toFixed(3)} / strafe ${STRAFE_SPEED.toFixed(3)}`, 18, 358);
+      ctx.fillText(`Pillar_A Height: ${currentPillarA ? currentPillarA.h.toFixed(2) : 'none'} | Pillar_B Height: ${pillarB ? pillarB.h.toFixed(2) : 'none'}`, 18, 374);
+      ctx.fillText(`Target Cell: ${targetCellLabel}`, 18, 390);
+      ctx.fillText(`Target Position: ${targetCoord}`, 18, 406);
+      ctx.fillText(`Target Object: ${targetObject}`, 18, 422);
       if (targetInfo) {
-        ctx.fillText(`Aiming at: ${targetObject} · Hit Height: ${targetInfo.height} (${targetInfo.z.toFixed(2)})`, 18, 420);
+        ctx.fillText(`Aiming at: ${targetObject} · Hit Height: ${targetInfo.height} (${targetInfo.z.toFixed(2)})`, 18, 438);
       }
       if (currentPillarA && pillarARenderState) {
         ctx.fillStyle = 'rgba(220,240,255,0.72)';
-        ctx.fillText(`Pillar_A world ${currentPillarA.x.toFixed(2)},${currentPillarA.y.toFixed(2)} | label ${Math.round((pillarARenderState.left + pillarARenderState.right)/2)},${Math.round(pillarARenderState.top - 18)}`, 18, 436);
+        ctx.fillText(`Pillar_A world ${currentPillarA.x.toFixed(2)},${currentPillarA.y.toFixed(2)} | label ${Math.round((pillarARenderState.left + pillarARenderState.right)/2)},${Math.round(pillarARenderState.top - 18)}`, 18, 454);
         ctx.fillText(`Seg1 ${Math.round(pillarARenderState.left - 16)},${Math.round(pillarARenderState.bottom - ((0.5 / PILLAR_A_SEGMENTS) * (pillarARenderState.bottom - pillarARenderState.top)))}`, 18, 452);
         ctx.fillText(`Seg12 ${Math.round(pillarARenderState.left - 16)},${Math.round(pillarARenderState.bottom - ((11.5 / PILLAR_A_SEGMENTS) * (pillarARenderState.bottom - pillarARenderState.top)))}`, 18, 468);
       }
@@ -4878,6 +4889,10 @@ ctx.fillRect(minX, minY, w, h);
       updatePlayerMissiles();
       if (player.hp <= 0) {
         player.hp = 0;
+        if (!gameOver) {
+          clearMouseInputState();
+          releaseGamePointerLock();
+        }
         gameOver = true;
       }
       if (player.shotFx && player.shotFx.timer > 0) player.shotFx.timer--;
@@ -4952,4 +4967,4 @@ ctx.fillRect(minX, minY, w, h);
     ensureLoopRunning();
   </script>
 </body>
-</html>
+</html>      
