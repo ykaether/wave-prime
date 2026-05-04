@@ -1503,8 +1503,8 @@
       keys._right = gp.axes[0] < -0.28;
       keys._forward = gp.axes[1] < -0.28;
       keys._back = gp.axes[1] > 0.28;
-      keys._turnL = gp.axes[2] > 0.28 || b(4);
-      keys._turnR = gp.axes[2] < -0.28 || b(5);
+      keys._turnL = gp.axes[2] > 0.28;
+      keys._turnR = gp.axes[2] < -0.28    ;
       keys._aimUp = gp.axes[3] < -0.22;
       keys._aimDown = gp.axes[3] > 0.22;
       keys._shootHeld = b(2);
@@ -1513,6 +1513,7 @@
       if (b(0) && !gpPrev[0]) jumpQ = true;
       if (b(7) && !gpPrev[7]) dashQ = true;
       if (b(2) && !gpPrev[2]) shootQ = true;
+      if (b(5) && !gpPrev[5]) fireMissile();
       gpPrev = {};
       const pressedButtonIds = [];
 
