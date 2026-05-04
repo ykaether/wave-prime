@@ -1,10 +1,21 @@
 <!DOCTYPE html>
 <html lang="ja">
 <head>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <meta charset="UTF-8" />
   <title>Metroid Prime Lite</title>
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; }
+    html, body {
+      margin: 0;
+      padding: 0;
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      background: #000;
+      touch-action: none;
+    }
+    
     body {
       min-height: 100vh;
       display: flex;
@@ -17,6 +28,12 @@
       color: #9ffbf5;
     }
     canvas {
+      display: block;
+      width: 100vw;
+      height: 100dvh;
+      max-width: 100vw;
+      max-height: 100dvh;
+      touch-action: none;
       border: 2px solid #42ecff;
       image-rendering: pixelated;
       box-shadow:
@@ -117,13 +134,13 @@
         mobileTouch.joyKnobY = mobileTouch.joyBaseY;
       }
 
-      mobileTouch.fireButton.x = WIDTH - 86;
-      mobileTouch.fireButton.y = HEIGHT - 92;
+      mobileTouch.fireButton.x = WIDTH - 78;
+      mobileTouch.fireButton.y = HEIGHT - 82;
 
       mobileTouch.pauseButton.x = WIDTH - 48;
       mobileTouch.pauseButton.y = 48;
-      mobileTouch.aimBaseX = WIDTH * 0.82;
-      mobileTouch.aimBaseY = HEIGHT * 0.58;
+      mobileTouch.aimBaseX = WIDTH * 0.84;
+      mobileTouch.aimBaseY = HEIGHT * 0.76;
 
       if (!mobileTouch.aimStickId) {
         mobileTouch.aimKnobX = mobileTouch.aimBaseX;
