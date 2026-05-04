@@ -374,7 +374,7 @@
       if (Math.abs(dy) < 1.2) dy = 0;
     
       if ("angle" in player) {
-        player.angle += dx * yawSensitivity;
+        player.angle -= dx * yawSensitivity;
       }
     
       if ("pitch" in player) {
