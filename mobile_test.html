@@ -98,7 +98,7 @@
 
       joyBaseX: 0,
       joyBaseY: 0,
-      joyRadius: 58,
+      joyRadius: 42,
       joyKnobX: 0,
       joyKnobY: 0,
 
@@ -107,7 +107,7 @@
       aimStickId: null,
       aimBaseX: 0,
       aimBaseY: 0,
-      aimRadius: 56,
+      aimRadius: 38,
       aimKnobX: 0,
       aimKnobY: 0,
       aimAxisX: 0,
@@ -356,7 +356,7 @@
       // Uses common player.angle / player.pitch fields if they exist.
       if (typeof player === "undefined") return;
 
-      const sensitivity = 0.0009;
+      const sensitivity = 0.0005;
 
       if ("angle" in player) {
         player.angle += dx * sensitivity;
