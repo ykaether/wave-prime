@@ -132,7 +132,7 @@
       // Left movement stick: lower-left
       // function layoutTouchControls() { 消していいやつ？
   // Left movement stick: around vertical center
-      mobileTouch.joyBaseX = WIDTH * 0.12;
+      mobileTouch.joyBaseX = WIDTH * 0.20;
       mobileTouch.joyBaseY = HEIGHT * 0.52;
     
       if (!mobileTouch.joystickId) {
@@ -291,7 +291,7 @@
       // Uses common player.angle / player.pitch fields if they exist.
       if (typeof player === "undefined") return;
 
-      const sensitivity = 0.0016;
+      const sensitivity = 0.0009;
 
       if ("angle" in player) {
         player.angle += dx * sensitivity;
