@@ -98,7 +98,7 @@
 
       joyBaseX: 0,
       joyBaseY: 0,
-      joyRadius: 64,
+      joyRadius: 58,
       joyKnobX: 0,
       joyKnobY: 0,
 
@@ -107,7 +107,7 @@
       aimStickId: null,
       aimBaseX: 0,
       aimBaseY: 0,
-      aimRadius: 58,
+      aimRadius: 56,
       aimKnobX: 0,
       aimKnobY: 0,
       aimAxisX: 0,
@@ -126,26 +126,34 @@
     }
 
     function layoutTouchControls() {
-      mobileTouch.joyBaseX = WIDTH * 0.16;
-      mobileTouch.joyBaseY = HEIGHT * 0.56;
-
+      // COD Mobile-like layout ratios
+      // Origin: top-left. Higher Y = lower on screen.
+    
+      // Left movement stick: lower-left
+      mobileTouch.joyBaseX = WIDTH * 0.12;
+      mobileTouch.joyBaseY = HEIGHT * 0.76;
+    
       if (!mobileTouch.joystickId) {
         mobileTouch.joyKnobX = mobileTouch.joyBaseX;
         mobileTouch.joyKnobY = mobileTouch.joyBaseY;
       }
-
-      mobileTouch.fireButton.x = WIDTH - 78;
-      mobileTouch.fireButton.y = HEIGHT - 82;
-
-      mobileTouch.pauseButton.x = WIDTH - 48;
-      mobileTouch.pauseButton.y = 48;
-      mobileTouch.aimBaseX = WIDTH * 0.84;
-      mobileTouch.aimBaseY = HEIGHT * 0.56;
-
-      if (!mobileTouch.aimStickId) {
+    
+      // Right aim stick / aim area: lower-right, but slightly above FIRE
+      mobileTouch.aimBaseX = WIDTH * 0.80;
+      mobileTouch.aimBaseY = HEIGHT * 0.70;
+    
+      if (!mobileTouch.aimId) {
         mobileTouch.aimKnobX = mobileTouch.aimBaseX;
         mobileTouch.aimKnobY = mobileTouch.aimBaseY;
       }
+    
+      // Main FIRE button: far-right, slightly above bottom
+      mobileTouch.fireButton.x = WIDTH * 0.89;
+      mobileTouch.fireButton.y = HEIGHT * 0.64;
+    
+      // Pause button: top-right
+      mobileTouch.pauseButton.x = WIDTH * 0.95;
+      mobileTouch.pauseButton.y = HEIGHT * 0.09;
     }
 
     function pointInCircle(px, py, cx, cy, r) {
@@ -281,7 +289,7 @@
       // Uses common player.angle / player.pitch fields if they exist.
       if (typeof player === "undefined") return;
 
-      const sensitivity = 0.0020;
+      const sensitivity = 0.0016;
 
       if ("angle" in player) {
         player.angle += dx * sensitivity;
