@@ -37,12 +37,14 @@
   <script>
     const canvas = document.getElementById('game');
     const ctx = canvas.getContext('2d');
+    const armCannonImg = new Image();
+      armCannonImg.src = "assets/images/arm_cannon_blue.png";
+
     const enemyGirlImg = new Image();
       enemyGirlImg.src = "assets/images/enemy_girl.png";
     const armCannonSound = new Audio('ManualEdit/assets/sounds/arm_cannon_sound.ogg');
       armCannonSound.volume = 0.7;
-    const armCannonSound = new Audio('ManualEdit/assets/sounds/arm_cannon_sound.ogg');
-    armCannonSound.volume = 0.7;
+    
     const floorTileImg = new Image();
       let floorTilePattern = null;
 
@@ -208,7 +210,7 @@
     let lockHeld = false;
     let mouseShootHeld = false;
     let mouseLockHeld = false;
-    let mouseLookEnabled = true;
+    let pointerLocked = false;
     let gpPrev = {};
     let debugPressedButtons = "none";
     let showDebugLabels = false;
@@ -351,8 +353,12 @@
       return document.pointerLockElement === canvas;
     }
 
+    function handlePointerLockChange() {
+      pointerLocked = document.pointerLockElement === canvas;
+    }
+
     function requestGamePointerLock() {
-      if (!mouseLookEnabled || !gameStarted || gamePaused || gameOver) return;
+      if (!gameStarted || gamePaused || gameOver || cleanupDone) return;
       if (!hasPointerLock() && canvas.requestPointerLock) {
         canvas.requestPointerLock();
       }
@@ -552,17 +558,23 @@
     }
 
     function handleMouseDown(e) {
-      if (!gameStarted || gamePaused || gameOver) return;
+      if (!gameStarted) {
+        startGame();
+        requestGamePointerLock();
+        e.preventDefault();
+        return;
+      }
+      if (gamePaused || gameOver || cleanupDone) return;
+      requestGamePointerLock();
       if (e.button === 0) {
         mouseShootHeld = true;
-        requestGamePointerLock();
         e.preventDefault();
         return;
       }
       if (e.button === 2) {
         mouseLockHeld = true;
-        requestGamePointerLock();
         e.preventDefault();
+        return;
       }
     }
 
@@ -572,11 +584,12 @@
       } else if (e.button === 2) {
         mouseLockHeld = false;
       }
+      e.preventDefault();
     }
 
     function handleMouseMove(e) {
-      if (!gameStarted || gamePaused || gameOver) return;
-      if (!hasPointerLock()) return;
+      if (!pointerLocked) return;
+      if (!gameStarted || gamePaused || gameOver || cleanupDone) return;
       player.angle -= e.movementX * MOUSE_SENS_X;
       if (!player.lockTarget) {
         player.pitch = clamp(player.pitch - e.movementY * MOUSE_SENS_Y, -MAX_PITCH, MAX_PITCH);
@@ -809,10 +822,11 @@
       addManagedListener(window, 'keydown', handleKeyDown);
       addManagedListener(window, 'keyup', handleKeyUp);
       addManagedListener(window, 'pointerdown', handlePointerDown);
-      addManagedListener(window, 'mousedown', handleMouseDown);
+      addManagedListener(canvas, 'mousedown', handleMouseDown);
       addManagedListener(window, 'mouseup', handleMouseUp);
-      addManagedListener(window, 'mousemove', handleMouseMove);
-      addManagedListener(window, 'contextmenu', handleContextMenu);
+      addManagedListener(document, 'mousemove', handleMouseMove);
+      addManagedListener(canvas, 'contextmenu', handleContextMenu);
+      addManagedListener(document, 'pointerlockchange', handlePointerLockChange);
       addManagedListener(window, 'pointerdown', forceRestartIfNeeded, true);
       addManagedListener(window, 'mousedown', forceRestartIfNeeded, true);
       addManagedListener(window, 'touchstart', forceRestartIfNeeded, true);
