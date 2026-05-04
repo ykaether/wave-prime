@@ -60,8 +60,11 @@
       canvas.style.position = "fixed";
       canvas.style.left = "50%";
       canvas.style.top = "50%";
-      canvas.style.width = `${WIDTH * scale}px`;
-      canvas.style.height = `${HEIGHT * scale}px`;
+      canvas.style.width = "100vw";
+      canvas.style.height = "100vh";
+      canvas.style.position = "fixed";
+      canvas.style.left = "0";
+      canvas.style.top = "0";
       canvas.style.transform = "translate(-50%, -50%)";
       canvas.style.margin = "0";
       canvas.style.display = "block";
