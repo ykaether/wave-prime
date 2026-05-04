@@ -656,7 +656,8 @@
     const PLAYER_CHARGE_COOLDOWN = 22;
     const PLAYER_SHOT_FX_TIME = 20;
     const PLAYER_CHARGE_BEAM_TIME = 28;
-    const PLAYER_MISSILE_COOLDOWN_MAX = 240;
+    const PLAYER_MISSILE_MAX_CHARGES = 5;
+    const PLAYER_MISSILE_RECHARGE_TIME = 240;
     const PLAYER_MISSILE_START_SPEED = 0.055;
     const PLAYER_MISSILE_MAX_SPEED = 0.16;
     const PLAYER_MISSILE_ACCEL = 0.0045;
@@ -825,7 +826,8 @@
     let hpSettingInput = "99";
     let pauseMenuSelection = 0;
     let enemyUpdateTick = 0;
-    let playerMissileCooldown = 0;
+    let playerMissileCharges = PLAYER_MISSILE_MAX_CHARGES;
+    let playerMissileRechargeTimer = 0;
     const managedListeners = [];
     let animationFrameId = null;
     let loopStarted = false;
@@ -1229,7 +1231,8 @@
       playerMissiles.length = 0;
       missileBursts.length = 0;
       enemyUpdateTick = 0;
-      playerMissileCooldown = 0;
+      playerMissileCharges = PLAYER_MISSILE_MAX_CHARGES;
+      playerMissileRechargeTimer = 0;
       for (const e of enemies) {
         e.x = e.homeX;
         e.y = e.homeY;
@@ -2274,8 +2277,14 @@
         player.chargeLevel = 0;
       }
       shootQ = false;
-      if (playerMissileCooldown > 0) {
-        playerMissileCooldown--;
+      if (playerMissileCharges < PLAYER_MISSILE_MAX_CHARGES) {
+        playerMissileRechargeTimer++;
+        if (playerMissileRechargeTimer >= PLAYER_MISSILE_RECHARGE_TIME) {
+          playerMissileCharges++;
+          playerMissileRechargeTimer = 0;
+        }
+      } else {
+        playerMissileRechargeTimer = 0;
       }
       missileQ = false;
       player.wasShootHeld = shootHeldNow;
@@ -2577,8 +2586,8 @@
     }
 
     function fireMissile() {
-      if (gamePaused || gameOver || playerMissileCooldown > 0) return;
-      playerMissileCooldown = PLAYER_MISSILE_COOLDOWN_MAX;
+      if (gamePaused || gameOver || playerMissileCharges <= 0) return;
+      playerMissileCharges--;
       // Keep missile motion easy to read in the 2.5D view:
       // spawn it a bit ahead of the player and fly mostly parallel to the floor.
       const ang = player.angle;
@@ -5213,12 +5222,10 @@ ctx.fillRect(minX, minY, w, h);
       ctx.fillText(`Difficulty: ${getDifficultyConfig().label}`, 18, 86);
       ctx.fillText(`World2 Active: ${ACTIVE_WORLD === 'World2'}`, 18, 102);
       ctx.fillText(`Weapon: ${currentWeapon === 'wave' ? 'WAVE' : 'NORMAL'}`, 18, 118);
-      const missileReady = playerMissileCooldown <= 0;
-      const missileCooldownRate = missileReady
+      const missileReady = playerMissileCharges > 0;
+      const missileRechargeRate = playerMissileCharges >= PLAYER_MISSILE_MAX_CHARGES
         ? 1
-        : 1 - (playerMissileCooldown / PLAYER_MISSILE_COOLDOWN_MAX);
-      ctx.fillStyle = missileReady ? '#dff7b1' : '#f5c97a';
-      ctx.fillText(missileReady ? 'MISSILE READY' : `MISSILE COOLING ${playerMissileCooldown}`, 18, 134);
+        : (playerMissileRechargeTimer / PLAYER_MISSILE_RECHARGE_TIME);
       ctx.fillText(`ENERGY ${player.hp}`, 18, 150);
       ctx.fillText(`AIM ${Math.round((-player.pitch / MAX_PITCH) * 100)}`, 18, 166);
       const gp = [...navigator.getGamepads()].find(g => g);
@@ -5231,8 +5238,27 @@ ctx.fillRect(minX, minY, w, h);
       ctx.fillRect(18, 188, 180 * (player.hp / player.maxHp), 8);
       ctx.fillStyle = 'rgba(226,213,182,0.14)';
       ctx.fillRect(18, 202, 180, 6);
-      ctx.fillStyle = missileReady ? '#7af0b4' : '#e2b45e';
-      ctx.fillRect(18, 202, 180 * missileCooldownRate, 6);
+
+      const missileHudX = WIDTH - 184;
+      const missileHudY = 118;
+      ctx.textAlign = 'left';
+      ctx.fillStyle = '#efe8d2';
+      ctx.fillText(`MISSILE ${playerMissileCharges} / ${PLAYER_MISSILE_MAX_CHARGES}`, missileHudX, missileHudY);
+      ctx.fillStyle = 'rgba(226,213,182,0.14)';
+      ctx.fillRect(missileHudX, missileHudY + 10, 150, 6);
+      ctx.fillStyle = 'rgba(122,240,180,0.95)';
+      ctx.fillRect(missileHudX, missileHudY + 10, 150 * (playerMissileCharges / PLAYER_MISSILE_MAX_CHARGES), 6);
+      if (playerMissileCharges < PLAYER_MISSILE_MAX_CHARGES) {
+        ctx.fillStyle = 'rgba(226,213,182,0.14)';
+        ctx.fillRect(missileHudX, missileHudY + 24, 150, 4);
+        ctx.fillStyle = '#f5c97a';
+        ctx.fillRect(missileHudX, missileHudY + 24, 150 * missileRechargeRate, 4);
+        ctx.fillStyle = '#f5c97a';
+        ctx.fillText(`RECHARGE ${PLAYER_MISSILE_RECHARGE_TIME - playerMissileRechargeTimer}`, missileHudX, missileHudY + 42);
+      } else {
+        ctx.fillStyle = '#dff7b1';
+        ctx.fillText('READY', missileHudX, missileHudY + 42);
+      }
 
       ctx.fillStyle = 'rgba(239,232,210,0.78)';
       ctx.fillText(`Labels ${showDebugLabels ? 'ON' : 'OFF'} (L)`, 18, 196);
