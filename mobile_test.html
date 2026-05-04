@@ -497,7 +497,7 @@
         }
 
         // Right aim joystick area
-        if (p.x > WIDTH * 0.55) {
+        if (pointInCircle(p.x, p.y, mobileTouch.aimBaseX, mobileTouch.aimBaseY, mobileTouch.aimRadius + 18)) {
           mobileTouch.aimStickId = e.pointerId;
           updateAimJoystick(p.x, p.y);
           canvas.setPointerCapture(e.pointerId);
@@ -4808,7 +4808,7 @@ ctx.fillRect(minX, minY, w, h);
       ctx.strokeStyle = player.lockTarget ? '#ffd768' : (hit ? '#ffd7a0' : '#dfeadf');
       ctx.lineWidth = 2;
       const aimReticleOffsetX = (!player.lockTarget && isTouchControlsVisible()) ? mobileTouch.aimAxisX * 46 : 0;
-      const aimReticleOffsetY = (!player.lockTarget && isTouchControlsVisible()) ? mobileTouch.aimAxisY * 34 : 0;
+      const aimReticleOffsetY = 0;
       const cx = WIDTH / 2 + aimReticleOffsetX;
       const cy = HEIGHT / 2 + aimReticleOffsetY;
       const gap = 12;
