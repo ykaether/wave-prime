@@ -836,50 +836,20 @@
     const goalOrb = { x: 53.5, y: 16.0, orbZ: 6.2 };
     const STAGE_NAME = 'Room_1_StartArea';
     const PILLAR_A_SEGMENTS = 12;
-    const DIFFICULTY_CONFIG = {
-      easy: {
-        label: "EASY",
-        enemySpeedMul: 0.70,
-        enemyReturnSpeedMul: 0.80,
-        enemyAttackCooldownMul: 1.60,
-        enemyBulletSpeedMul: 0.75,
-        enemyHpMul: 0.70,
-        hardExtraBullets: false,
-      },
+    const DIFFICULTY_CONFIGS = {
       normal: {
-        label: "NORMAL",
-        enemySpeedMul: 1.0,
-        enemyReturnSpeedMul: 1.0,
-        enemyAttackCooldownMul: 1.0,
-        enemyBulletSpeedMul: 1.0,
-        enemyHpMul: 1.0,
-        hardExtraBullets: false,
+        label: 'NORMAL',
+        enemyApproachMul: 1,
+        enemyReturnMul: 1,
+        enemyCooldownMul: 1,
       },
       hard: {
-        label: "HARD",
-        enemySpeedMul: 1.45,
-        enemyReturnSpeedMul: 1.25,
-        enemyAttackCooldownMul: 0.72,
-        enemyBulletSpeedMul: 1.12,
-        enemyHpMul: 1.25,
-        hardExtraBullets: true,
+        label: 'HARD',
+        enemyApproachMul: 1.08,
+        enemyReturnMul: 1.08,
+        enemyCooldownMul: 0.84,
       },
     };
-    
-    const DIFFICULTY_ORDER = ["easy", "normal", "hard"];
-    
-    function getDifficultyConfig() {
-      return DIFFICULTY_CONFIG[selectedDifficulty] || DIFFICULTY_CONFIG.normal;
-    }
-    
-    function cycleDifficulty(dir) {
-      const currentIndex = DIFFICULTY_ORDER.indexOf(selectedDifficulty);
-      const safeIndex = currentIndex >= 0 ? currentIndex : 1;
-      const nextIndex =
-        (safeIndex + dir + DIFFICULTY_ORDER.length) % DIFFICULTY_ORDER.length;
-    
-      selectedDifficulty = DIFFICULTY_ORDER[nextIndex];
-    }
     let selectedDifficulty = 'normal';
     let gameStarted = false;
     let startMenuSelection = 0;
@@ -1041,14 +1011,8 @@
           e.preventDefault();
           return;
         }
-        if (e.code === "ArrowLeft" || e.code === "KeyA") {
-          cycleDifficulty(-1);
-          e.preventDefault();
-          return;
-        }
-        
-        if (e.code === "ArrowRight" || e.code === "KeyD") {
-          cycleDifficulty(1);
+        if (e.code === "ArrowLeft" || e.code === "ArrowRight") {
+          if (startMenuSelection === 0) toggleSelectedDifficulty();
           e.preventDefault();
           return;
         }
@@ -1724,9 +1688,6 @@
     const currentPillarA = GRID_OBJECTS.find(obj => obj.id === 'pillar_a') || null;
 
     function mkEnemy(id, x, y, patrolMinX, patrolMaxX) {
-      const diff = getDifficultyConfig();
-      const baseEnemyHp = 48;
-      const enemyHp = Math.max(1, Math.round(baseEnemyHp * (diff.enemyHpMul || 1)));
       return {
         id, label: id,
         x, y, w: 0.95, d: 0.95, h: 1.45, z: ENEMY_FLOAT_BASE_Z,
@@ -1734,8 +1695,7 @@
         vz: 0,
         vx: 0, vy: 0,
         patrolMinX, patrolMaxX,
-        hp: enemyHp,
-        maxHp: enemyHp,
+        hp: 50, maxHp: 50,
         dead: false, invTimer: 0,
         shootCD: 0, angle: 0, stationary: false,
         meleeCD: 0, meleeFx: 0,
