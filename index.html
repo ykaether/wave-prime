@@ -1,8 +1,3 @@
-    const enemyGirlImg = new Image();
-      enemyGirlImg.src = "assets/images/enemy_girl.png";
-    const armCannonSound = new Audio('ManualEdit/assets/sounds/arm_cannon_sound.ogg');
-      armCannonSound.volume = 0.7;
-
 <!DOCTYPE html>
 <html lang="ja">
 <head>
@@ -21,7 +16,6 @@
       font-family: monospace;
       color: #9ffbf5;
     }
-      
     canvas {
       border: 2px solid #42ecff;
       image-rendering: pixelated;
@@ -29,27 +23,6 @@
         0 0 18px rgba(66, 236, 255, 0.35),
         0 0 42px rgba(255, 92, 194, 0.14);
     }
-      #gameWrap {
-  position: relative;
-  display: inline-block;
-}
-
-    #controllerNotice {
-      position: absolute;
-      top: 92px;
-      right: 24px;
-      max-width: 360px;
-      padding: 14px 18px;
-      background: rgba(5, 10, 22, 0.9);
-      border: 2px solid #7ee7ff;
-      box-shadow: 0 0 14px rgba(126, 231, 255, 0.35);
-      color: #ffea00 !important;
-      font-family: Arial, sans-serif;
-      font-size: 18px;
-      font-weight: 700;
-      line-height: 1.45;
-      z-index: 20;
-
     #hud {
       margin-top: 10px;
       font-size: 12px;
@@ -58,14 +31,7 @@
   </style>
 </head>
 <body>
-    <div id="gameWrap">
-    <canvas id="game" width="1280" height="720"></canvas>
-
-  <div id="controllerNotice">
-    Best played using a Nintendo Switch Pro Controller.<br>
-    Try connecting it via Bluetooth.
-  </div>
-</div>
+  <canvas id="game" width="1280" height="720"></canvas>
   <div id="hud">PC: WASD move · Mouse look · Left Click shoot/charge · Right Click lock-on · Space jump · Shift dash · R missile · 1/2 weapon · V visor · Esc/P pause · Pro Controller supported</div>
 
   <script>
@@ -74,9 +40,11 @@
     const armCannonImg = new Image();
       armCannonImg.src = "assets/images/arm_cannon_blue.png";
     const enemyGirlImg = new Image();
-      enemyGirlImg.src = "assets/images/enemy_girl.png";
+      enemyGirlImg.src = location.href.includes('/Projects/job_search/')
+        ? "file:///Users/yuikitagawa/Documents/metroidvania-prototype/game/ManualEdit/assets/images/enemy_girl.png"
+        : "ManualEdit/assets/images/enemy_girl.png";
     const armCannonSound = new Audio('ManualEdit/assets/sounds/arm_cannon_sound.ogg');
-      armCannonSound.volume = 0.7;
+    armCannonSound.volume = 0.7;
     const floorTileImg = new Image();
       let floorTilePattern = null;
 
@@ -114,8 +82,7 @@
     const PLAYER_CHARGE_COOLDOWN = 22;
     const PLAYER_SHOT_FX_TIME = 20;
     const PLAYER_CHARGE_BEAM_TIME = 28;
-    const PLAYER_MISSILE_MAX_AMMO = 15;
-    const PLAYER_MISSILE_REGEN_TIME = 170;
+    const PLAYER_MISSILE_COOLDOWN_MAX = 240;
     const PLAYER_MISSILE_START_SPEED = 0.055;
     const PLAYER_MISSILE_MAX_SPEED = 0.16;
     const PLAYER_MISSILE_ACCEL = 0.0045;
@@ -285,8 +252,7 @@
     let hpSettingInput = "99";
     let pauseMenuSelection = 0;
     let enemyUpdateTick = 0;
-    let playerMissileAmmo = PLAYER_MISSILE_MAX_AMMO;
-    let playerMissileRegenTimer = 0;
+    let playerMissileCooldown = 0;
     const managedListeners = [];
     let animationFrameId = null;
     let loopStarted = false;
@@ -693,8 +659,7 @@
       playerMissiles.length = 0;
       missileBursts.length = 0;
       enemyUpdateTick = 0;
-      playerMissileAmmo = PLAYER_MISSILE_MAX_AMMO;
-      playerMissileRegenTimer = 0;
+      playerMissileCooldown = 0;
       for (const e of enemies) {
         e.x = e.homeX;
         e.y = e.homeY;
@@ -1503,8 +1468,8 @@
       keys._right = gp.axes[0] < -0.28;
       keys._forward = gp.axes[1] < -0.28;
       keys._back = gp.axes[1] > 0.28;
-      keys._turnL = gp.axes[2] > 0.28;
-      keys._turnR = gp.axes[2] < -0.28    ;
+      keys._turnL = gp.axes[2] > 0.28 || b(4);
+      keys._turnR = gp.axes[2] < -0.28 || b(5);
       keys._aimUp = gp.axes[3] < -0.22;
       keys._aimDown = gp.axes[3] > 0.22;
       keys._shootHeld = b(2);
@@ -1513,7 +1478,6 @@
       if (b(0) && !gpPrev[0]) jumpQ = true;
       if (b(7) && !gpPrev[7]) dashQ = true;
       if (b(2) && !gpPrev[2]) shootQ = true;
-      if (b(5) && !gpPrev[5]) fireMissile();
       gpPrev = {};
       const pressedButtonIds = [];
 
@@ -1731,14 +1695,8 @@
         player.chargeLevel = 0;
       }
       shootQ = false;
-      if (playerMissileAmmo < PLAYER_MISSILE_MAX_AMMO) {
-        playerMissileRegenTimer++;
-        if (playerMissileRegenTimer >= PLAYER_MISSILE_REGEN_TIME) {
-          playerMissileAmmo++;
-          playerMissileRegenTimer = 0;
-        }
-      } else {
-        playerMissileRegenTimer = 0;
+      if (playerMissileCooldown > 0) {
+        playerMissileCooldown--;
       }
       missileQ = false;
       player.wasShootHeld = shootHeldNow;
@@ -2040,9 +1998,8 @@
     }
 
     function fireMissile() {
-      if (gamePaused || gameOver || playerMissileAmmo <= 0) return;
-      playerMissileAmmo--;
-      playerMissileRegenTimer = 0;
+      if (gamePaused || gameOver || playerMissileCooldown > 0) return;
+      playerMissileCooldown = PLAYER_MISSILE_COOLDOWN_MAX;
       // Keep missile motion easy to read in the 2.5D view:
       // spawn it a bit ahead of the player and fly mostly parallel to the floor.
       const ang = player.angle;
@@ -4675,7 +4632,12 @@ ctx.fillRect(minX, minY, w, h);
       ctx.fillText(`Difficulty: ${getDifficultyConfig().label}`, 18, 86);
       ctx.fillText(`World2 Active: ${ACTIVE_WORLD === 'World2'}`, 18, 102);
       ctx.fillText(`Weapon: ${currentWeapon === 'wave' ? 'WAVE' : 'NORMAL'}`, 18, 118);
-      ctx.fillText(`MISSILE ${playerMissileAmmo} / ${PLAYER_MISSILE_MAX_AMMO}`, 18, 134);
+      const missileReady = playerMissileCooldown <= 0;
+      const missileCooldownRate = missileReady
+        ? 1
+        : 1 - (playerMissileCooldown / PLAYER_MISSILE_COOLDOWN_MAX);
+      ctx.fillStyle = missileReady ? '#dff7b1' : '#f5c97a';
+      ctx.fillText(missileReady ? 'MISSILE READY' : `MISSILE COOLING ${playerMissileCooldown}`, 18, 134);
       ctx.fillText(`ENERGY ${player.hp}`, 18, 150);
       ctx.fillText(`AIM ${Math.round((-player.pitch / MAX_PITCH) * 100)}`, 18, 166);
       const gp = [...navigator.getGamepads()].find(g => g);
@@ -4690,8 +4652,8 @@ ctx.fillRect(minX, minY, w, h);
       ctx.fillRect(18, 206, 180 * (player.hp / player.maxHp), 8);
       ctx.fillStyle = 'rgba(226,213,182,0.14)';
       ctx.fillRect(18, 220, 180, 6);
-      ctx.fillStyle = '#e2b45e';
-      ctx.fillRect(18, 220, 180 * (playerMissileAmmo / PLAYER_MISSILE_MAX_AMMO), 6);
+      ctx.fillStyle = missileReady ? '#7af0b4' : '#e2b45e';
+      ctx.fillRect(18, 220, 180 * missileCooldownRate, 6);
 
       ctx.fillStyle = 'rgba(239,232,210,0.78)';
       ctx.fillText(`Labels ${showDebugLabels ? 'ON' : 'OFF'} (L)`, 18, 214);
@@ -4995,19 +4957,6 @@ ctx.fillRect(minX, minY, w, h);
     }
 
     ensureLoopRunning();
-      // PC keyboard missile input
-        document.addEventListener("keydown", e => {
-          if (e.code !== "KeyR") return;
-        
-          if (typeof gameStarted !== "undefined" && !gameStarted) return;
-          if (typeof gamePaused !== "undefined" && gamePaused) return;
-          if (typeof gameOver !== "undefined" && gameOver) return;
-        
-          if (typeof fireMissile === "function") {
-            fireMissile();
-            e.preventDefault();
-          }
-        }, true);
   </script>
 </body>
-</html>      
+</html>
