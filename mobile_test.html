@@ -696,7 +696,7 @@
     const PLAYER_MISSILE_MAX_SPEED = 0.16;
     const PLAYER_MISSILE_ACCEL = 0.0045;
     const PLAYER_MISSILE_LIFE = 110;
-    const PLAYER_MISSILE_DAMAGE = 8;
+    const PLAYER_MISSILE_DAMAGE = 4;
     const PLAYER_MISSILE_SPLASH_RADIUS = 2.1;
     const PLAYER_MISSILE_SPLASH_DAMAGE = 10;
     const LOCK_ON_RANGE = 20;
@@ -5219,6 +5219,54 @@ ctx.fillRect(minX, minY, w, h);
       }
 
       ctx.restore();
+    }
+    function drawHpOrb(x, y, r, fillRatio) {
+  const fill = Math.max(0, Math.min(1, fillRatio));
+
+  ctx.save();
+
+  // outer shell
+  ctx.beginPath();
+  ctx.arc(x, y, r, 0, Math.PI * 2);
+  ctx.fillStyle = "rgba(20, 45, 65, 0.65)";
+  ctx.fill();
+  ctx.strokeStyle = "rgba(160, 230, 255, 0.85)";
+  ctx.lineWidth = 1.5;
+  ctx.stroke();
+
+  // filled amount
+  if (fill > 0) {
+    ctx.save();
+    ctx.beginPath();
+//    ctx.arc(x, y, r - 1, 0, Math.PI * 2);
+    drawPlayerHpOrbs(WIDTH / 2 - 120, 35);
+    ctx.clip();
+
+    const fillHeight = (r * 2) * fill;
+    ctx.fillStyle = "rgba(170, 235, 255, 0.95)";
+    ctx.fillRect(x - r, y + r - fillHeight, r * 2, fillHeight);
+
+    ctx.restore();
+  }
+
+  ctx.restore();
+}
+
+    function drawPlayerHpOrbs(x, y) {
+      const HP_PER_ORB = 100;
+      const maxHp = Math.max(HP_PER_ORB, player.maxHp || HP_PER_ORB);
+      const currentHp = Math.max(0, player.hp || 0);
+      const orbCount = Math.max(1, Math.ceil(maxHp / HP_PER_ORB));
+    
+      const r = 5;
+      const gap = 14;
+    
+      for (let i = 0; i < orbCount; i++) {
+        const hpInThisOrb = currentHp - i * HP_PER_ORB;
+        const fillRatio = hpInThisOrb / HP_PER_ORB;
+    
+        drawHpOrb(x + i * gap, y, r, fillRatio);
+      }
     }
     function drawHUD() {
       ctx.fillStyle = "#ffffff";
