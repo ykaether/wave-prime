@@ -165,7 +165,7 @@
       mobileTouch.aimBaseX = WIDTH * 0.80;
       mobileTouch.aimBaseY = HEIGHT * 0.52;
     
-      if (!mobileTouch.aimId) {
+      if (!mobileTouch.aimStickId) {
         mobileTouch.aimKnobX = mobileTouch.aimBaseX;
         mobileTouch.aimKnobY = mobileTouch.aimBaseY;
       }
@@ -552,7 +552,7 @@
           return;
         }
 
-        if (e.pointerId === mobileTouch.aimId) {
+        if (e.pointerId === mobileTouch.aimStickId) {
           mobileTouch.aimId = null;
           e.preventDefault();
           return;
@@ -561,7 +561,7 @@
 
       canvas.addEventListener("pointercancel", e => {
         if (e.pointerId === mobileTouch.joystickId) releaseTouchJoystick();
-        if (e.pointerId === mobileTouch.aimId) mobileTouch.aimId = null;
+        if (e.pointerId === mobileTouch.aimStickId) mobileTouch.aimId = null;
         if (e.pointerId === mobileTouch.aimStickId) releaseAimJoystick();
       });
     }
