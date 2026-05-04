@@ -167,6 +167,7 @@
     const dockJumpEl = document.getElementById('dockJump');
     const dockPauseEl = document.getElementById('dockPause');
     const dockFullEl = document.getElementById('dockFull');
+    let mobileLayoutStateKey = "";
         // ===== Minimal Mobile Touch Controls =====
     // Adds: left joystick, right-side aim swipe, FIRE button, PAUSE button.
     // Designed to reuse existing keyboard/game logic as much as possible.
@@ -231,6 +232,25 @@
         }
       }
       window.scrollTo(0, 0);
+    }
+
+    function syncMobileViewportLayout(force = false) {
+      const viewportW = Math.round(window.visualViewport?.width || window.innerWidth || 0);
+      const viewportH = Math.round(window.visualViewport?.height || window.innerHeight || 0);
+      const touchCapable = ("ontouchstart" in window) || navigator.maxTouchPoints > 0;
+      const stateKey = [
+        viewportW,
+        viewportH,
+        touchCapable ? 1 : 0,
+        typeof gameStarted !== "undefined" && gameStarted ? 1 : 0,
+        typeof gamePaused !== "undefined" && gamePaused ? 1 : 0,
+        typeof gameOver !== "undefined" && gameOver ? 1 : 0,
+      ].join(":");
+
+      if (force || stateKey !== mobileLayoutStateKey) {
+        mobileLayoutStateKey = stateKey;
+        fitCanvasToViewport();
+      }
     }
 
     window.addEventListener("resize", fitCanvasToViewport);
@@ -1459,6 +1479,7 @@
       gamePaused = false;
       restartRequested = false;
       pauseMenuSelection = 0;
+      syncMobileViewportLayout(true);
     }
 
     function isRestartScreenActive() {
@@ -1489,6 +1510,7 @@
 
     function pauseGame() {
       gamePaused = true;
+      syncMobileViewportLayout(true);
     }
 
     function stopGame() {
@@ -1511,6 +1533,7 @@
     function resumeGame() {
       if (cleanupDone) return;
       gamePaused = false;
+      syncMobileViewportLayout(true);
       ensureLoopRunning();
     }
 
@@ -1520,6 +1543,7 @@
       gamePaused = false;
       gameOver = false;
       restartRequested = false;
+      syncMobileViewportLayout(true);
       ensureLoopRunning();
     }
 
@@ -5604,6 +5628,7 @@ ctx.fillRect(minX, minY, w, h);
     function loop() {
       animationFrameId = null;
       if (cleanupDone || loopStopped) return;
+      syncMobileViewportLayout();
       if (!gameStarted) {
         canvas.style.filter = "none";
         drawStartScreen();
