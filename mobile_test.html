@@ -130,28 +130,30 @@
       // Origin: top-left. Higher Y = lower on screen.
     
       // Left movement stick: lower-left
+      function layoutTouchControls() {
+  // Left movement stick: around vertical center
       mobileTouch.joyBaseX = WIDTH * 0.12;
-      mobileTouch.joyBaseY = HEIGHT * 0.76;
+      mobileTouch.joyBaseY = HEIGHT * 0.52;
     
       if (!mobileTouch.joystickId) {
         mobileTouch.joyKnobX = mobileTouch.joyBaseX;
         mobileTouch.joyKnobY = mobileTouch.joyBaseY;
       }
     
-      // Right aim stick / aim area: lower-right, but slightly above FIRE
+      // Right aim stick: same height as left stick
       mobileTouch.aimBaseX = WIDTH * 0.80;
-      mobileTouch.aimBaseY = HEIGHT * 0.70;
+      mobileTouch.aimBaseY = HEIGHT * 0.52;
     
       if (!mobileTouch.aimId) {
         mobileTouch.aimKnobX = mobileTouch.aimBaseX;
         mobileTouch.aimKnobY = mobileTouch.aimBaseY;
       }
     
-      // Main FIRE button: far-right, slightly above bottom
-      mobileTouch.fireButton.x = WIDTH * 0.89;
-      mobileTouch.fireButton.y = HEIGHT * 0.64;
+      // FIRE button: upper-right of the aim stick
+      mobileTouch.fireButton.x = WIDTH * 0.90;
+      mobileTouch.fireButton.y = HEIGHT * 0.40;
     
-      // Pause button: top-right
+      // Pause button
       mobileTouch.pauseButton.x = WIDTH * 0.95;
       mobileTouch.pauseButton.y = HEIGHT * 0.09;
     }
