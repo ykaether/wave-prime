@@ -41,6 +41,38 @@
     // Adds: left joystick, right-side aim swipe, FIRE button, PAUSE button.
     // Designed to reuse existing keyboard/game logic as much as possible.
 
+    function fitCanvasToViewport() {
+      if (typeof canvas === "undefined") return;
+
+      const scale = Math.min(window.innerWidth / WIDTH, window.innerHeight / HEIGHT);
+
+      canvas.style.position = "fixed";
+      canvas.style.left = "50%";
+      canvas.style.top = "50%";
+      canvas.style.width = `${WIDTH * scale}px`;
+      canvas.style.height = `${HEIGHT * scale}px`;
+      canvas.style.transform = "translate(-50%, -50%)";
+      canvas.style.margin = "0";
+      canvas.style.display = "block";
+      canvas.style.touchAction = "none";
+
+      document.documentElement.style.margin = "0";
+      document.documentElement.style.padding = "0";
+      document.documentElement.style.overflow = "hidden";
+      document.body.style.margin = "0";
+      document.body.style.padding = "0";
+      document.body.style.overflow = "hidden";
+      document.body.style.background = "#000";
+    }
+
+    window.addEventListener("resize", fitCanvasToViewport);
+    window.addEventListener("orientationchange", () => {
+      setTimeout(fitCanvasToViewport, 250);
+    });
+
+    fitCanvasToViewport();
+
+
     const TOUCH_CONTROLS_ENABLED = true;
 
     const mobileTouch = {
@@ -55,7 +87,14 @@
 
       aimLastX: 0,
       aimLastY: 0,
-
+      aimStickId: null,
+      aimBaseX: 0,
+      aimBaseY: 0,
+      aimRadius: 58,
+      aimKnobX: 0,
+      aimKnobY: 0,
+      aimAxisX: 0,
+      aimAxisY: 0,
       fireButton: { x: 0, y: 0, r: 54, label: "FIRE" },
       pauseButton: { x: 0, y: 0, r: 34, label: "II" },
     };
@@ -83,6 +122,13 @@
 
       mobileTouch.pauseButton.x = WIDTH - 48;
       mobileTouch.pauseButton.y = 48;
+      mobileTouch.aimBaseX = WIDTH * 0.82;
+      mobileTouch.aimBaseY = HEIGHT * 0.58;
+
+      if (!mobileTouch.aimStickId) {
+        mobileTouch.aimKnobX = mobileTouch.aimBaseX;
+        mobileTouch.aimKnobY = mobileTouch.aimBaseY;
+      }
     }
 
     function pointInCircle(px, py, cx, cy, r) {
@@ -108,6 +154,50 @@
       keys["KeyD"] = false;
     }
 
+    function updateAimJoystick(px, py) {
+      const dx = px - mobileTouch.aimBaseX;
+      const dy = py - mobileTouch.aimBaseY;
+      const dist = Math.hypot(dx, dy) || 1;
+      const maxR = mobileTouch.aimRadius;
+
+      const clampedDist = Math.min(dist, maxR);
+      const nx = dx / dist;
+      const ny = dy / dist;
+
+      mobileTouch.aimKnobX = mobileTouch.aimBaseX + nx * clampedDist;
+      mobileTouch.aimKnobY = mobileTouch.aimBaseY + ny * clampedDist;
+
+      mobileTouch.aimAxisX = dx / maxR;
+      mobileTouch.aimAxisY = dy / maxR;
+
+      mobileTouch.aimAxisX = Math.max(-1, Math.min(1, mobileTouch.aimAxisX));
+      mobileTouch.aimAxisY = Math.max(-1, Math.min(1, mobileTouch.aimAxisY));
+    }
+
+    function releaseAimJoystick() {
+      mobileTouch.aimStickId = null;
+      mobileTouch.aimKnobX = mobileTouch.aimBaseX;
+      mobileTouch.aimKnobY = mobileTouch.aimBaseY;
+      mobileTouch.aimAxisX = 0;
+      mobileTouch.aimAxisY = 0;
+    }
+
+    function updateTouchAimFromStick() {
+      if (typeof player === "undefined") return;
+      if (!mobileTouch.aimStickId) return;
+
+      const sensitivity = 0.035;
+
+      // 左右が逆だったので、ここは minus にする
+      if ("angle" in player) {
+        player.angle -= mobileTouch.aimAxisX * sensitivity;
+      }
+
+      if ("pitch" in player) {
+        player.pitch -= mobileTouch.aimAxisY * sensitivity * 0.65;
+        player.pitch = Math.max(-0.95, Math.min(0.95, player.pitch));
+      }
+    }
     function updateTouchJoystick(px, py) {
       const dx = px - mobileTouch.joyBaseX;
       const dy = py - mobileTouch.joyBaseY;
@@ -211,6 +301,30 @@
       ctx.strokeStyle = "rgba(220, 255, 255, 0.85)";
       ctx.stroke();
 
+      // Aim joystick base
+      ctx.globalAlpha = 0.58;
+      ctx.beginPath();
+      ctx.arc(mobileTouch.aimBaseX, mobileTouch.aimBaseY, mobileTouch.aimRadius, 0, Math.PI * 2);
+      ctx.fillStyle = "rgba(35, 25, 70, 0.45)";
+      ctx.fill();
+      ctx.strokeStyle = "rgba(180, 150, 255, 0.65)";
+      ctx.lineWidth = 2;
+      ctx.stroke();
+
+      // Aim joystick knob
+      ctx.beginPath();
+      ctx.arc(mobileTouch.aimKnobX, mobileTouch.aimKnobY, 26, 0, Math.PI * 2);
+      ctx.fillStyle = "rgba(170, 130, 255, 0.45)";
+      ctx.fill();
+      ctx.strokeStyle = "rgba(235, 220, 255, 0.85)";
+      ctx.stroke();
+
+      ctx.font = "bold 12px monospace";
+      ctx.fillStyle = "rgba(235, 220, 255, 0.75)";
+      ctx.textAlign = "center";
+      ctx.textBaseline = "middle";
+      ctx.fillText("AIM", mobileTouch.aimBaseX, mobileTouch.aimBaseY - mobileTouch.aimRadius - 14);
+
       function drawButton(btn) {
         ctx.beginPath();
         ctx.arc(btn.x, btn.y, btn.r, 0, Math.PI * 2);
@@ -267,18 +381,21 @@
           return;
         }
 
-        // Right side aim swipe
-        mobileTouch.aimId = e.pointerId;
-        mobileTouch.aimLastX = p.x;
-        mobileTouch.aimLastY = p.y;
-        canvas.setPointerCapture(e.pointerId);
-        e.preventDefault();
+        // Right aim joystick area
+        if (p.x > WIDTH * 0.55) {
+          mobileTouch.aimStickId = e.pointerId;
+          updateAimJoystick(p.x, p.y);
+          canvas.setPointerCapture(e.pointerId);
+          e.preventDefault();
+          return;
+        }
       });
 
       canvas.addEventListener("pointermove", e => {
         if (!isTouchControlsVisible()) return;
 
         const p = getCanvasPointerPos(e);
+
 
         if (e.pointerId === mobileTouch.joystickId) {
           updateTouchJoystick(p.x, p.y);
@@ -298,11 +415,22 @@
           e.preventDefault();
           return;
         }
+
+          if (e.pointerId === mobileTouch.aimStickId) {
+          updateAimJoystick(p.x, p.y);
+          e.preventDefault();
+          return;
+        }
       });
 
       canvas.addEventListener("pointerup", e => {
         if (e.pointerId === mobileTouch.joystickId) {
           releaseTouchJoystick();
+          e.preventDefault();
+          return;
+        }
+        if (e.pointerId === mobileTouch.aimStickId) {
+          releaseAimJoystick();
           e.preventDefault();
           return;
         }
@@ -317,6 +445,7 @@
       canvas.addEventListener("pointercancel", e => {
         if (e.pointerId === mobileTouch.joystickId) releaseTouchJoystick();
         if (e.pointerId === mobileTouch.aimId) mobileTouch.aimId = null;
+        if (e.pointerId === mobileTouch.aimStickId) releaseAimJoystick();
       });
     }
     const armCannonImg = new Image();
@@ -5153,7 +5282,9 @@ ctx.fillRect(minX, minY, w, h);
         restartRequested = false;
         restartGame();
       }
+
       canvas.style.filter = visorMode === "xray" ? "grayscale(1) brightness(1.18) contrast(1.08)" : "none";
+      updateTouchAimFromStick();
       updatePlayer();
       updateEnemies();
       updateEnemyShots();
