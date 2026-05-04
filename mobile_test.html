@@ -155,6 +155,55 @@
     }
 
     function layoutTouchControls() {
+      const isPortrait = HEIGHT > WIDTH;
+      mobileTouch.isPortrait = isPortrait;
+      
+      if (isPortrait) {
+        const panelTop = HEIGHT * 0.62;
+        const panelH = HEIGHT - panelTop;
+      
+        mobileTouch.controlPanelTop = panelTop;
+      
+        const stickR = Math.min(WIDTH * 0.16, panelH * 0.32, 70);
+        const buttonR = Math.min(WIDTH * 0.07, panelH * 0.16, 34);
+      
+        // 左半分：移動カーソル
+        mobileTouch.joystickBaseX = WIDTH * 0.25;
+        mobileTouch.joystickBaseY = panelTop + panelH * 0.55;
+        mobileTouch.joystickRadius = stickR;
+      
+        // 右半分：AIMカーソル
+        mobileTouch.aimBaseX = WIDTH * 0.68;
+        mobileTouch.aimBaseY = panelTop + panelH * 0.48;
+        mobileTouch.aimRadius = stickR * 0.85;
+      
+        // 右半分：ボタン
+        mobileTouch.fireButton = {
+          x: WIDTH * 0.88,
+          y: panelTop + panelH * 0.36,
+          r: buttonR
+        };
+      
+        mobileTouch.missileButton = {
+          x: WIDTH * 0.78,
+          y: panelTop + panelH * 0.22,
+          r: buttonR
+        };
+      
+        mobileTouch.dashButton = {
+          x: WIDTH * 0.78,
+          y: panelTop + panelH * 0.72,
+          r: buttonR
+        };
+      
+        mobileTouch.jumpButton = {
+          x: WIDTH * 0.90,
+          y: panelTop + panelH * 0.62,
+          r: buttonR
+        };
+      
+        return;
+      }
       const stickInsetX = WIDTH * 0.18;
       const stickCenterY = HEIGHT * 0.5;
       const ringOffset = 116;
@@ -504,7 +553,16 @@
       }
 
       // Left movement joystick
-      if (p.x < WIDTH * 0.40) {
+      const isPortraitMoveArea =
+        mobileTouch.isPortrait &&
+        p.y >= mobileTouch.controlPanelTop &&
+        p.x < WIDTH * 0.5;
+      
+      const isLandscapeMoveArea =
+        !mobileTouch.isPortrait &&
+        p.x < WIDTH * 0.42;
+      
+      if (isPortraitMoveArea || isLandscapeMoveArea) {
         mobileTouch.joystickId = id;
         updateTouchJoystick(p.x, p.y);
         return true;
