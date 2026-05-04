@@ -491,14 +491,17 @@
         updateTouchJoystick(p.x, p.y);
         return true;
       }
-
-      const aimHitRadius = mobileTouch.aimRadius * 1.6;
-
-      if (pointInCircle(p.x, p.y, mobileTouch.aimBaseX, mobileTouch.aimBaseY, aimHitRadius)) {
+      
+      // Right AIM area.
+      // Buttons are already checked above, so any remaining touch on the right side
+      // should start aim control.
+      if (p.x >= WIDTH * 0.50) {
         mobileTouch.aimStickId = id;
         updateAimJoystick(p.x, p.y);
         return true;
       }
+      
+      return false;
 
       return false;
     }
