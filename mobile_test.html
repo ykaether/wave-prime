@@ -127,7 +127,7 @@
 
     function layoutTouchControls() {
       mobileTouch.joyBaseX = WIDTH * 0.16;
-      mobileTouch.joyBaseY = HEIGHT * 0.78;
+      mobileTouch.joyBaseY = HEIGHT * 0.56;
 
       if (!mobileTouch.joystickId) {
         mobileTouch.joyKnobX = mobileTouch.joyBaseX;
@@ -281,7 +281,7 @@
       // Uses common player.angle / player.pitch fields if they exist.
       if (typeof player === "undefined") return;
 
-      const sensitivity = 0.0042;
+      const sensitivity = 0.0020;
 
       if ("angle" in player) {
         player.angle += dx * sensitivity;
