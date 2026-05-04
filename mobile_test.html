@@ -9,8 +9,19 @@
   <title>Wave-Prime</title>
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; }
+    html {
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      overscroll-behavior: none;
+      touch-action: none;
+      position: fixed;
+      inset: 0;
+    }
     body {
-      min-height: 100vh;
+      width: 100%;
+      height: 100%;
+      min-height: 100%;
       display: flex;
       flex-direction: column;
       align-items: center;
@@ -21,9 +32,12 @@
       color: #9ffbf5;
       overflow: hidden;
       overscroll-behavior: none;
-      touch-action: manipulation;
+      touch-action: none;
+      position: fixed;
+      inset: 0;
     }
     canvas {
+      position: fixed;
       border: 2px solid #42ecff;
       image-rendering: pixelated;
       box-shadow:
@@ -31,9 +45,7 @@
         0 0 42px rgba(255, 92, 194, 0.14);
     }
     #hud {
-      margin-top: 10px;
-      font-size: 12px;
-      color: #98fbff;
+      display: none;
     }
     #mobileDock {
       position: fixed;
@@ -42,6 +54,7 @@
       bottom: 0;
       height: 34vh;
       min-height: 220px;
+      max-height: 320px;
       display: none;
       z-index: 30;
       background:
@@ -52,6 +65,7 @@
       user-select: none;
       -webkit-user-select: none;
       -webkit-touch-callout: none;
+      overflow: hidden;
     }
     #mobileDock.visible { display: block; }
     .dock-pad {
@@ -163,13 +177,19 @@
       const viewportW = window.visualViewport?.width || window.innerWidth;
       const viewportH = window.visualViewport?.height || window.innerHeight;
       const portrait = viewportH > viewportW;
-      const dockHeight = portrait ? Math.max(220, Math.round(viewportH * 0.34)) : 0;
-      const topAreaH = portrait ? Math.max(220, viewportH - dockHeight - 12) : viewportH;
+      const touchVisible = isTouchControlsVisible();
+      const dockHeight = portrait && touchVisible
+        ? Math.max(220, Math.min(320, Math.round(viewportH * 0.34)))
+        : 0;
+      const gameGap = portrait && touchVisible ? 8 : 0;
+      const topAreaH = portrait && touchVisible
+        ? Math.max(220, viewportH - dockHeight - gameGap)
+        : viewportH;
       const scale = Math.min(viewportW / WIDTH, topAreaH / HEIGHT) * (portrait ? 0.985 : 0.96);
 
       canvas.style.position = "fixed";
       canvas.style.left = "50%";
-      canvas.style.top = portrait ? "8px" : "50%";
+      canvas.style.top = portrait ? "0px" : "50%";
       canvas.style.width = `${WIDTH * scale}px`;
       canvas.style.height = `${HEIGHT * scale}px`;
       canvas.style.transform = portrait ? "translateX(-50%)" : "translate(-50%, -50%)";
@@ -179,26 +199,56 @@
       canvas.style.maxWidth = portrait ? "100vw" : "96vw";
       canvas.style.maxHeight = portrait ? `${topAreaH}px` : "96vh";
 
+      document.documentElement.style.position = "fixed";
+      document.documentElement.style.inset = "0";
       document.documentElement.style.margin = "0";
       document.documentElement.style.padding = "0";
       document.documentElement.style.overflow = "hidden";
       document.documentElement.style.height = "100%";
       document.documentElement.style.width = "100%";
+      document.documentElement.style.touchAction = "none";
+      document.body.style.position = "fixed";
+      document.body.style.inset = "0";
       document.body.style.margin = "0";
       document.body.style.padding = "0";
       document.body.style.overflow = "hidden";
       document.body.style.background = "#000";
       document.body.style.height = "100%";
       document.body.style.width = "100%";
+      document.body.style.touchAction = "none";
       if (mobileDock) {
-        mobileDock.classList.toggle("visible", portrait && isTouchControlsVisible());
+        mobileDock.classList.toggle("visible", portrait && touchVisible);
+        if (portrait && touchVisible) {
+          mobileDock.style.height = `${dockHeight}px`;
+          mobileDock.style.minHeight = `${dockHeight}px`;
+          mobileDock.style.top = `${Math.max(0, viewportH - dockHeight)}px`;
+          mobileDock.style.bottom = "auto";
+        } else {
+          mobileDock.style.height = "";
+          mobileDock.style.minHeight = "";
+          mobileDock.style.top = "";
+          mobileDock.style.bottom = "";
+        }
       }
+      window.scrollTo(0, 0);
     }
 
     window.addEventListener("resize", fitCanvasToViewport);
+    window.visualViewport?.addEventListener("resize", fitCanvasToViewport);
+    window.visualViewport?.addEventListener("scroll", fitCanvasToViewport);
     window.addEventListener("orientationchange", () => {
       setTimeout(fitCanvasToViewport, 250);
     });
+
+    function preventMobilePageGesture(e) {
+      if (("ontouchstart" in window) || navigator.maxTouchPoints > 0) {
+        e.preventDefault();
+      }
+    }
+
+    document.addEventListener("touchmove", preventMobilePageGesture, { passive: false });
+    document.addEventListener("gesturestart", preventMobilePageGesture, { passive: false });
+    document.addEventListener("gesturechange", preventMobilePageGesture, { passive: false });
 
     async function requestMobileFullscreen() {
       const target = document.documentElement;
@@ -936,9 +986,9 @@
     let gameStarted = false;
     let startMenuSelection = 0;
     let gameOver = false;
-    fitCanvasToViewport();
     let restartRequested = false;
     let gamePaused = false;
+    fitCanvasToViewport();
     let hpSettingValue = 99;
     let hpSettingInput = "99";
     let pauseMenuSelection = 0;
