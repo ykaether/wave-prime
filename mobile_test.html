@@ -93,10 +93,10 @@
     const TOUCH_CONTROLS_ENABLED = true;
 
     const mobileTouch = {
-      const TOUCH_AIM_DEADZONE = 0.18;
-      const TOUCH_AIM_MAX_YAW_SPEED = 0.014;
-      const TOUCH_AIM_MAX_PITCH_SPEED = 0.006;
-      const TOUCH_AIM_PITCH_LIMIT = 0.38;
+      TOUCH_AIM_DEADZONE = 0.18;
+      TOUCH_AIM_MAX_YAW_SPEED = 0.014;
+      TOUCH_AIM_MAX_PITCH_SPEED = 0.006;
+      TOUCH_AIM_PITCH_LIMIT = 0.38;
       joystickId: null,
       aimId: null,
 
@@ -538,18 +538,6 @@
           return;
         }
 
-        if (e.pointerId === mobileTouch.aimId) {
-          const dx = p.x - mobileTouch.aimLastX;
-          const dy = p.y - mobileTouch.aimLastY;
-        
-          updateTouchAim(dx, dy);
-        
-          mobileTouch.aimLastX = p.x;
-          mobileTouch.aimLastY = p.y;
-        
-          e.preventDefault();
-          return;
-        }
       });
 
       canvas.addEventListener("pointerup", e => {
