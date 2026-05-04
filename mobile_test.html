@@ -362,19 +362,21 @@
     }
 
     function updateTouchAim(dx, dy) {
-      // Minimal FPS-like touch aim.
-      // Uses common player.angle / player.pitch fields if they exist.
       if (typeof player === "undefined") return;
-
-      const sensitivity = 0.0042;
-
+    
+      const sensitivity = 0.00065;
+      const pitchLimit = 0.32;
+    
+      if (Math.abs(dx) < 1.2) dx = 0;
+      if (Math.abs(dy) < 1.2) dy = 0;
+    
       if ("angle" in player) {
         player.angle += dx * sensitivity;
       }
-
+    
       if ("pitch" in player) {
         player.pitch -= dy * sensitivity;
-        player.pitch = Math.max(-0.95, Math.min(0.95, player.pitch));
+        player.pitch = Math.max(-pitchLimit, Math.min(pitchLimit, player.pitch));
       }
     }
 
@@ -508,8 +510,11 @@
       // Right AIM joystick fallback area.
       // All action buttons are already checked above, so anything outside the left
       // movement area should reliably become AIM control.
+      // 上から更にアプデ入ってます
       if (p.x >= WIDTH * 0.40) {
         mobileTouch.aimStickId = id;
+        mobileTouch.aimLastX = p.x;
+        mobileTouch.aimLastY = p.y;
         updateAimJoystick(p.x, p.y);
         return true;
       }
@@ -530,10 +535,18 @@
         return true;
       }
 
-      if (id === mobileTouch.aimStickId) {
-        updateAimJoystick(p.x, p.y);
-        return true;
-      }
+    if (id === mobileTouch.aimStickId) {
+      const dx = p.x - mobileTouch.aimLastX;
+      const dy = p.y - mobileTouch.aimLastY;
+    
+      updateAimJoystick(p.x, p.y);
+      updateTouchAim(dx, dy);
+    
+      mobileTouch.aimLastX = p.x;
+      mobileTouch.aimLastY = p.y;
+    
+      return true;
+    }
 
       return false;
     }
@@ -5501,7 +5514,7 @@ ctx.fillRect(minX, minY, w, h);
       }
 
       canvas.style.filter = visorMode === "xray" ? "grayscale(1) brightness(1.18) contrast(1.08)" : "none";
-      updateTouchAimFromStick();
+      // updateTouchAimFromStick();
       updatePlayer();
       updateEnemies();
       updateEnemyShots();
