@@ -155,11 +155,11 @@
     }
 
     function layoutTouchControls() {
-      const isPortrait = HEIGHT > WIDTH;
+      const isPortrait = window.innerHeight > window.innerWidth;
       mobileTouch.isPortrait = isPortrait;
       
       if (isPortrait) {
-        const panelTop = HEIGHT * 0.62;
+        const panelTop = HEIGHT * 0.68;
         const panelH = HEIGHT - panelTop;
       
         mobileTouch.controlPanelTop = panelTop;
