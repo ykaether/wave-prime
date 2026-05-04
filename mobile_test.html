@@ -93,6 +93,10 @@
     const TOUCH_CONTROLS_ENABLED = true;
 
     const mobileTouch = {
+      const TOUCH_AIM_DEADZONE = 0.18;
+      const TOUCH_AIM_MAX_YAW_SPEED = 0.014;
+      const TOUCH_AIM_MAX_PITCH_SPEED = 0.006;
+      const TOUCH_AIM_PITCH_LIMIT = 0.38;
       joystickId: null,
       aimId: null,
 
@@ -2121,7 +2125,27 @@
         if (keys.PageDown) player.pitch -= AIM_PITCH_SPEED;
         player.pitch = clamp(player.pitch, -MAX_PITCH, MAX_PITCH);
       }
-
+      function applyTouchAim() {
+        if (!isTouchControlsVisible()) return;
+        if (typeof player === "undefined") return;
+        if (!mobileTouch.aimId) return;
+      
+        let ax = mobileTouch.aimAxisX || 0;
+        let ay = mobileTouch.aimAxisY || 0;
+      
+        if (Math.abs(ax) < TOUCH_AIM_DEADZONE) ax = 0;
+        if (Math.abs(ay) < TOUCH_AIM_DEADZONE) ay = 0;
+      
+        player.angle += ax * TOUCH_AIM_MAX_YAW_SPEED;
+      
+        if ("pitch" in player) {
+          player.pitch -= ay * TOUCH_AIM_MAX_PITCH_SPEED;
+          player.pitch = Math.max(
+            -TOUCH_AIM_PITCH_LIMIT,
+            Math.min(TOUCH_AIM_PITCH_LIMIT, player.pitch)
+          );
+        }
+      }
       let step = 0;
       let strafe = 0;
       if (keys.KeyW || keys.ArrowUp || keys._forward) step += MOVE_SPEED * moveMult;
