@@ -146,8 +146,8 @@
 
     function layoutTouchControls() {
       const stickInsetX = WIDTH * 0.18;
-      const stickCenterY = HEIGHT * 0.68;
-      const ringOffset = 88;
+      const stickCenterY = HEIGHT * 0.58;
+      const ringOffset = 108;
 
       mobileTouch.joyBaseX = stickInsetX;
       mobileTouch.joyBaseY = stickCenterY;
@@ -184,6 +184,10 @@
       const dx = px - cx;
       const dy = py - cy;
       return dx * dx + dy * dy <= r * r;
+    }
+
+    function pointInButton(px, py, btn, extra = 14) {
+      return pointInCircle(px, py, btn.x, btn.y, btn.r + extra);
     }
 
     function getCanvasPointerPos(e) {
@@ -453,20 +457,20 @@
         requestMobileFullscreen();
 
         // Pause button
-        if (pointInCircle(p.x, p.y, mobileTouch.pauseButton.x, mobileTouch.pauseButton.y, mobileTouch.pauseButton.r)) {
+        if (pointInButton(p.x, p.y, mobileTouch.pauseButton)) {
           touchPause();
           e.preventDefault();
           return;
         }
 
-        if (pointInCircle(p.x, p.y, mobileTouch.fullscreenButton.x, mobileTouch.fullscreenButton.y, mobileTouch.fullscreenButton.r)) {
+        if (pointInButton(p.x, p.y, mobileTouch.fullscreenButton)) {
           requestMobileFullscreen();
           e.preventDefault();
           return;
         }
 
         // Fire button
-        if (pointInCircle(p.x, p.y, mobileTouch.fireButton.x, mobileTouch.fireButton.y, mobileTouch.fireButton.r)) {
+        if (pointInButton(p.x, p.y, mobileTouch.fireButton, 18)) {
           mobileTouch.fireId = e.pointerId;
           mobileTouch.fireHeld = true;
           canvas.setPointerCapture(e.pointerId);
@@ -474,19 +478,19 @@
           return;
         }
 
-        if (pointInCircle(p.x, p.y, mobileTouch.missileButton.x, mobileTouch.missileButton.y, mobileTouch.missileButton.r)) {
+        if (pointInButton(p.x, p.y, mobileTouch.missileButton, 18)) {
           fireMissile();
           e.preventDefault();
           return;
         }
 
-        if (pointInCircle(p.x, p.y, mobileTouch.dashButton.x, mobileTouch.dashButton.y, mobileTouch.dashButton.r)) {
+        if (pointInButton(p.x, p.y, mobileTouch.dashButton, 18)) {
           dashQ = true;
           e.preventDefault();
           return;
         }
 
-        if (pointInCircle(p.x, p.y, mobileTouch.jumpButton.x, mobileTouch.jumpButton.y, mobileTouch.jumpButton.r)) {
+        if (pointInButton(p.x, p.y, mobileTouch.jumpButton, 18)) {
           jumpQ = true;
           e.preventDefault();
           return;
