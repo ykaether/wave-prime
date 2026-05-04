@@ -258,7 +258,6 @@
       return ("ontouchstart" in window) || navigator.maxTouchPoints > 0;
     }
 
-    fitCanvasToViewport();
 
     function layoutTouchControls() {
       if (isPortraitTouchLayout()) {
@@ -746,6 +745,7 @@
       floorTileImg.src = 'assets/images/floor_blue_grass_tile.png';
     const WIDTH = canvas.width;
     const HEIGHT = canvas.height;
+    fitCanvasToViewport();
     let visorMode = "normal"; // "normal" or "xray"
     let prevDpadLeftPressed = false;
     let prevDpadRightPressed = false;
