@@ -504,7 +504,7 @@
         }
 
         // Right aim joystick area
-        if (p.x > WIDTH * 0.55) {
+        if (p.x > WIDTH * 0.50) {
           mobileTouch.aimStickId = e.pointerId;
           updateAimJoystick(p.x, p.y);
           canvas.setPointerCapture(e.pointerId);
@@ -2119,7 +2119,7 @@
       function applyTouchAim() {
         if (!isTouchControlsVisible()) return;
         if (typeof player === "undefined") return;
-        if (!mobileTouch.aimId) return;
+        if (!mobileTouch.aimStickId) return;
       
         let ax = mobileTouch.aimAxisX || 0;
         let ay = mobileTouch.aimAxisY || 0;
