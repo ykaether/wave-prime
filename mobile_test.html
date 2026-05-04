@@ -3324,7 +3324,7 @@ ctx.fillRect(minX, minY, w, h);
       // use the existing blue grass tile image as the main surface,
       // then add only a lightweight animated tint on top.
       // This is much cheaper than fully procedural per-tile wave coloring.
-      const T = 0.5; // larger tiles = fewer projected quads
+      const T = 0.25; // larger tiles = fewer projected quads
       const px = player.x, py = player.y;
       const txMin = Math.floor((px - 20) / T);
       const txMax = Math.ceil((px + 20) / T);
