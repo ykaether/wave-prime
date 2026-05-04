@@ -605,8 +605,7 @@
     const PLAYER_CHARGE_COOLDOWN = 22;
     const PLAYER_SHOT_FX_TIME = 20;
     const PLAYER_CHARGE_BEAM_TIME = 28;
-    const PLAYER_MISSILE_MAX_AMMO = 15;
-    const PLAYER_MISSILE_REGEN_TIME = 170;
+    const PLAYER_MISSILE_COOLDOWN_MAX = 240;
     const PLAYER_MISSILE_START_SPEED = 0.055;
     const PLAYER_MISSILE_MAX_SPEED = 0.16;
     const PLAYER_MISSILE_ACCEL = 0.0045;
@@ -775,8 +774,7 @@
     let hpSettingInput = "99";
     let pauseMenuSelection = 0;
     let enemyUpdateTick = 0;
-    let playerMissileAmmo = PLAYER_MISSILE_MAX_AMMO;
-    let playerMissileRegenTimer = 0;
+    let playerMissileCooldown = 0;
     const managedListeners = [];
     let animationFrameId = null;
     let loopStarted = false;
@@ -1180,8 +1178,7 @@
       playerMissiles.length = 0;
       missileBursts.length = 0;
       enemyUpdateTick = 0;
-      playerMissileAmmo = PLAYER_MISSILE_MAX_AMMO;
-      playerMissileRegenTimer = 0;
+      playerMissileCooldown = 0;
       for (const e of enemies) {
         e.x = e.homeX;
         e.y = e.homeY;
@@ -2226,14 +2223,8 @@
         player.chargeLevel = 0;
       }
       shootQ = false;
-      if (playerMissileAmmo < PLAYER_MISSILE_MAX_AMMO) {
-        playerMissileRegenTimer++;
-        if (playerMissileRegenTimer >= PLAYER_MISSILE_REGEN_TIME) {
-          playerMissileAmmo++;
-          playerMissileRegenTimer = 0;
-        }
-      } else {
-        playerMissileRegenTimer = 0;
+      if (playerMissileCooldown > 0) {
+        playerMissileCooldown--;
       }
       missileQ = false;
       player.wasShootHeld = shootHeldNow;
@@ -2535,9 +2526,8 @@
     }
 
     function fireMissile() {
-      if (gamePaused || gameOver || playerMissileAmmo <= 0) return;
-      playerMissileAmmo--;
-      playerMissileRegenTimer = 0;
+      if (gamePaused || gameOver || playerMissileCooldown > 0) return;
+      playerMissileCooldown = PLAYER_MISSILE_COOLDOWN_MAX;
       // Keep missile motion easy to read in the 2.5D view:
       // spawn it a bit ahead of the player and fly mostly parallel to the floor.
       const ang = player.angle;
@@ -5172,7 +5162,12 @@ ctx.fillRect(minX, minY, w, h);
       ctx.fillText(`Difficulty: ${getDifficultyConfig().label}`, 18, 86);
       ctx.fillText(`World2 Active: ${ACTIVE_WORLD === 'World2'}`, 18, 102);
       ctx.fillText(`Weapon: ${currentWeapon === 'wave' ? 'WAVE' : 'NORMAL'}`, 18, 118);
-      ctx.fillText(`MISSILE ${playerMissileAmmo} / ${PLAYER_MISSILE_MAX_AMMO}`, 18, 134);
+      const missileReady = playerMissileCooldown <= 0;
+      const missileCooldownRate = missileReady
+        ? 1
+        : 1 - (playerMissileCooldown / PLAYER_MISSILE_COOLDOWN_MAX);
+      ctx.fillStyle = missileReady ? '#dff7b1' : '#f5c97a';
+      ctx.fillText(missileReady ? 'MISSILE READY' : `MISSILE COOLING ${playerMissileCooldown}`, 18, 134);
       ctx.fillText(`ENERGY ${player.hp}`, 18, 150);
       ctx.fillText(`AIM ${Math.round((-player.pitch / MAX_PITCH) * 100)}`, 18, 166);
       const gp = [...navigator.getGamepads()].find(g => g);
@@ -5185,8 +5180,8 @@ ctx.fillRect(minX, minY, w, h);
       ctx.fillRect(18, 188, 180 * (player.hp / player.maxHp), 8);
       ctx.fillStyle = 'rgba(226,213,182,0.14)';
       ctx.fillRect(18, 202, 180, 6);
-      ctx.fillStyle = '#e2b45e';
-      ctx.fillRect(18, 202, 180 * (playerMissileAmmo / PLAYER_MISSILE_MAX_AMMO), 6);
+      ctx.fillStyle = missileReady ? '#7af0b4' : '#e2b45e';
+      ctx.fillRect(18, 202, 180 * missileCooldownRate, 6);
 
       ctx.fillStyle = 'rgba(239,232,210,0.78)';
       ctx.fillText(`Labels ${showDebugLabels ? 'ON' : 'OFF'} (L)`, 18, 196);
