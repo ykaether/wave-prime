@@ -745,7 +745,6 @@
       floorTileImg.src = 'assets/images/floor_blue_grass_tile.png';
     const WIDTH = canvas.width;
     const HEIGHT = canvas.height;
-    fitCanvasToViewport();
     let visorMode = "normal"; // "normal" or "xray"
     let prevDpadLeftPressed = false;
     let prevDpadRightPressed = false;
@@ -937,6 +936,7 @@
     let gameStarted = false;
     let startMenuSelection = 0;
     let gameOver = false;
+    fitCanvasToViewport();
     let restartRequested = false;
     let gamePaused = false;
     let hpSettingValue = 99;
