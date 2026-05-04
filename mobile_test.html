@@ -153,21 +153,21 @@
         mobileTouch.joyKnobY = mobileTouch.joyBaseY;
       }
 
-      mobileTouch.fireButton.x = WIDTH - 86;
-      mobileTouch.fireButton.y = HEIGHT - 92;
+      mobileTouch.fireButton.x = WIDTH - 98;
+      mobileTouch.fireButton.y = HEIGHT * 0.24;
 
       mobileTouch.pauseButton.x = WIDTH - 48;
       mobileTouch.pauseButton.y = 48;
       mobileTouch.fullscreenButton.x = WIDTH - 120;
       mobileTouch.fullscreenButton.y = 48;
-      mobileTouch.aimBaseX = WIDTH * 0.82;
-      mobileTouch.aimBaseY = HEIGHT * 0.58;
-      mobileTouch.missileButton.x = mobileTouch.aimBaseX + 92;
-      mobileTouch.missileButton.y = mobileTouch.aimBaseY - 54;
-      mobileTouch.dashButton.x = mobileTouch.aimBaseX + 88;
-      mobileTouch.dashButton.y = mobileTouch.aimBaseY + 34;
-      mobileTouch.jumpButton.x = mobileTouch.aimBaseX - 18;
-      mobileTouch.jumpButton.y = mobileTouch.aimBaseY - 94;
+      mobileTouch.aimBaseX = WIDTH * 0.72;
+      mobileTouch.aimBaseY = HEIGHT * 0.68;
+      mobileTouch.missileButton.x = WIDTH - 98;
+      mobileTouch.missileButton.y = HEIGHT * 0.42;
+      mobileTouch.dashButton.x = WIDTH - 98;
+      mobileTouch.dashButton.y = HEIGHT * 0.54;
+      mobileTouch.jumpButton.x = WIDTH - 98;
+      mobileTouch.jumpButton.y = HEIGHT * 0.66;
 
       if (!mobileTouch.aimStickId) {
         mobileTouch.aimKnobX = mobileTouch.aimBaseX;
@@ -497,7 +497,7 @@
         }
 
         // Right aim joystick area
-        if (pointInCircle(p.x, p.y, mobileTouch.aimBaseX, mobileTouch.aimBaseY, mobileTouch.aimRadius + 18)) {
+        if (pointInCircle(p.x, p.y, mobileTouch.aimBaseX, mobileTouch.aimBaseY, mobileTouch.aimRadius + 8)) {
           mobileTouch.aimStickId = e.pointerId;
           updateAimJoystick(p.x, p.y);
           canvas.setPointerCapture(e.pointerId);
