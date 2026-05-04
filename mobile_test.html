@@ -65,12 +65,13 @@
       document.body.style.background = "#000";
     }
 
-    // window.addEventListener("resize", fitCanvasToViewport);
-    // window.addEventListener("orientationchange", () => {
-    //   setTimeout(fitCanvasToViewport, 250);
-    // });
-
-    // fitCanvasToViewport();
+    function enableViewportFit() {
+      window.addEventListener("resize", fitCanvasToViewport);
+      window.addEventListener("orientationchange", () => {
+        setTimeout(fitCanvasToViewport, 250);
+      });
+      fitCanvasToViewport();
+    }
 
 
     const TOUCH_CONTROLS_ENABLED = true;
@@ -257,6 +258,39 @@
       }
     }
 
+    function handleTouchPauseMenuTap(px, py) {
+      if (!gamePaused) return false;
+
+      const panelW = WIDTH * 0.46;
+      const panelH = HEIGHT * 0.58;
+      const panelX = (WIDTH - panelW) / 2;
+      const panelY = (HEIGHT - panelH) / 2;
+      const menuY = panelY + 318;
+      const itemStep = 42;
+
+      if (px < panelX || px > panelX + panelW || py < panelY || py > panelY + panelH) {
+        closePauseMenu();
+        return true;
+      }
+
+      for (let i = 0; i < PAUSE_MENU_ITEMS.length; i++) {
+        const itemCenterY = menuY + i * itemStep;
+        if (Math.abs(py - itemCenterY) <= 22) {
+          pauseMenuSelection = i;
+          activatePauseMenuSelection();
+          return true;
+        }
+      }
+
+      const resumeHintY = panelY + panelH - 24;
+      if (Math.abs(py - resumeHintY) <= 20) {
+        closePauseMenu();
+        return true;
+      }
+
+      return true;
+    }
+
     function updateTouchAim(dx, dy) {
       // Minimal FPS-like touch aim.
       // Uses common player.angle / player.pitch fields if they exist.
@@ -349,12 +383,20 @@
       canvas.style.touchAction = "none";
 
       canvas.addEventListener("pointerdown", e => {
-        if (!isTouchControlsVisible()) return;
         if (e.pointerType !== "touch" && navigator.maxTouchPoints <= 0) return;
 
-        layoutTouchControls();
-
         const p = getCanvasPointerPos(e);
+
+        if (gamePaused) {
+          if (handleTouchPauseMenuTap(p.x, p.y)) {
+            e.preventDefault();
+          }
+          return;
+        }
+
+        if (!isTouchControlsVisible()) return;
+
+        layoutTouchControls();
 
         // Pause button
         if (pointInCircle(p.x, p.y, mobileTouch.pauseButton.x, mobileTouch.pauseButton.y, mobileTouch.pauseButton.r)) {
@@ -435,12 +477,19 @@
       });
     }
     const armCannonImg = new Image();
-      armCannonImg.src = "assets/images/arm_cannon_blue.png";
+      armCannonImg.src =
+        location.href.includes('/Projects/job_search/') || location.href.includes('/waveprime_workspace/')
+          ? "file:///Users/yuikitagawa/Documents/metroidvania-prototype/game/ManualEdit/assets/images/arm_cannon_blue.png"
+          : "assets/images/arm_cannon_blue.png";
     const enemyGirlImg = new Image();
       enemyGirlImg.src = location.href.includes('/Projects/job_search/')
         ? "file:///Users/yuikitagawa/Documents/metroidvania-prototype/game/ManualEdit/assets/images/enemy_girl.png"
         : "ManualEdit/assets/images/enemy_girl.png";
-    const armCannonSound = new Audio('ManualEdit/assets/sounds/arm_cannon_sound.ogg');
+    const armCannonSound = new Audio(
+      location.href.includes('/Projects/job_search/') || location.href.includes('/waveprime_workspace/')
+        ? 'file:///Users/yuikitagawa/Documents/metroidvania-prototype/game/ManualEdit/assets/sounds/arm_cannon_sound.ogg'
+        : 'ManualEdit/assets/sounds/arm_cannon_sound.ogg'
+    );
     armCannonSound.volume = 0.7;
     const floorTileImg = new Image();
       let floorTilePattern = null;
@@ -449,9 +498,13 @@
         floorTilePattern = ctx.createPattern(floorTileImg, 'repeat');
       };
 
-      floorTileImg.src = 'assets/images/floor_blue_grass_tile.png';
+      floorTileImg.src =
+        location.href.includes('/Projects/job_search/') || location.href.includes('/waveprime_workspace/')
+          ? 'file:///Users/yuikitagawa/Documents/metroidvania-prototype/game/ManualEdit/assets/images/floor_blue_grass_tile.png'
+          : 'assets/images/floor_blue_grass_tile.png';
     const WIDTH = canvas.width;
     const HEIGHT = canvas.height;
+    enableViewportFit();
     let visorMode = "normal"; // "normal" or "xray"
     let prevDpadLeftPressed = false;
     let prevDpadRightPressed = false;
@@ -1872,8 +1925,8 @@
       keys._right = gp.axes[0] < -0.28;
       keys._forward = gp.axes[1] < -0.28;
       keys._back = gp.axes[1] > 0.28;
-      keys._turnL = gp.axes[2] > 0.28 || b(4);
-      keys._turnR = gp.axes[2] < -0.28 || b(5);
+      keys._turnL = gp.axes[2] > 0.28;
+      keys._turnR = gp.axes[2] < -0.28;
       keys._aimUp = gp.axes[3] < -0.22;
       keys._aimDown = gp.axes[3] > 0.22;
       keys._shootHeld = b(2);
@@ -1882,6 +1935,7 @@
       if (b(0) && !gpPrev[0]) jumpQ = true;
       if (b(7) && !gpPrev[7]) dashQ = true;
       if (b(2) && !gpPrev[2]) shootQ = true;
+      if (b(5) && !gpPrev[5]) fireMissile();
       gpPrev = {};
       const pressedButtonIds = [];
 
