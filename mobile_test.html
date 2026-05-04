@@ -696,13 +696,20 @@
         if (handled) e.preventDefault();
       }, { passive: false });
     }
+    const ARM_CANNON_RELATIVE_PATH = "assets/images/arm_cannon_blue.png";
+    const ARM_CANNON_ABSOLUTE_PATH = "file:///Users/yuikitagawa/Documents/metroidvania-prototype/game/assets/images/arm_cannon_blue.png";
     const armCannonImg = new Image();
       armCannonImg.src =
         location.href.includes('/Projects/job_search/') || location.href.includes('/waveprime_workspace/')
-          ? "file:///Users/yuikitagawa/Documents/metroidvania-prototype/game/ManualEdit/assets/images/arm_cannon_blue.png"
-          : "assets/images/arm_cannon_blue.png";
+          ? ARM_CANNON_ABSOLUTE_PATH
+          : ARM_CANNON_RELATIVE_PATH;
+      armCannonImg.onerror = () => {
+        if (armCannonImg.src !== ARM_CANNON_ABSOLUTE_PATH) armCannonImg.src = ARM_CANNON_ABSOLUTE_PATH;
+      };
     const enemyGirlImg = new Image();
-      enemyGirlImg.src = "assets/images/enemy_girl.png";
+      enemyGirlImg.src = location.href.includes('/Projects/job_search/') || location.href.includes('/waveprime_workspace/')
+        ? "file:///Users/yuikitagawa/Documents/metroidvania-prototype/game/ManualEdit/assets/images/enemy_girl.png"
+        : "assets/images/enemy_girl.png";
     const armCannonSound = new Audio(
       location.href.includes('/Projects/job_search/') || location.href.includes('/waveprime_workspace/')
         ? 'file:///Users/yuikitagawa/Documents/metroidvania-prototype/game/ManualEdit/assets/sounds/arm_cannon_sound.ogg'
@@ -718,7 +725,7 @@
 
       floorTileImg.src =
         location.href.includes('/Projects/job_search/') || location.href.includes('/waveprime_workspace/')
-          ? 'file:///Users/yuikitagawa/Documents/metroidvania-prototype/game/ManualEdit/assets/images/floor_blue_grass_tile.png'
+          ? 'file:///Users/yuikitagawa/Documents/metroidvania-prototype/game/assets/images/floor_blue_grass_tile.png'
           : 'assets/images/floor_blue_grass_tile.png';
     const WIDTH = canvas.width;
     const HEIGHT = canvas.height;
@@ -894,20 +901,39 @@
     let goalFlashTimer = 0;
     let currentWeapon = 'normal';
     const goalOrb = { x: 53.5, y: 16.0, orbZ: 6.2 };
+    const ENABLE_GOAL_ORB = false;
     const STAGE_NAME = 'Room_1_StartArea';
     const PILLAR_A_SEGMENTS = 12;
     const DIFFICULTY_CONFIGS = {
+      easy: {
+        label: 'EASY',
+        enemyApproachMul: 0.84,
+        enemyReturnMul: 0.88,
+        enemyCooldownMul: 1.45,
+        enemyDamageMul: 0.55,
+        enemyBulletSpeedMul: 0.82,
+        playerDamageMul: 1.7,
+        playerMaxHp: 159,
+      },
       normal: {
         label: 'NORMAL',
         enemyApproachMul: 1,
         enemyReturnMul: 1,
         enemyCooldownMul: 1,
+        enemyDamageMul: 1,
+        enemyBulletSpeedMul: 1,
+        playerDamageMul: 1,
+        playerMaxHp: 99,
       },
       hard: {
         label: 'HARD',
         enemyApproachMul: 1.08,
         enemyReturnMul: 1.08,
         enemyCooldownMul: 0.84,
+        enemyDamageMul: 1.08,
+        enemyBulletSpeedMul: 1.08,
+        playerDamageMul: 1,
+        playerMaxHp: 99,
       },
     };
     let selectedDifficulty = 'normal';
@@ -1044,7 +1070,10 @@
     }
 
     function toggleSelectedDifficulty(delta = 1) {
-      selectedDifficulty = selectedDifficulty === 'normal' ? 'hard' : 'normal';
+      const order = ['easy', 'normal', 'hard'];
+      const currentIndex = Math.max(0, order.indexOf(selectedDifficulty));
+      const nextIndex = (currentIndex + (delta >= 0 ? 1 : -1) + order.length) % order.length;
+      selectedDifficulty = order[nextIndex];
     }
 
     function addManagedListener(target, type, handler, options) {
@@ -1299,6 +1328,7 @@
     };
 
     function restartGame() {
+      const difficulty = getDifficultyConfig();
       player.x = PLAYER_START.x;
       player.y = PLAYER_START.y;
       player.angle = PLAYER_START.angle;
@@ -1308,7 +1338,8 @@
       player.groundHeight = 0;
       player.vz = 0;
 
-      player.hp = player.maxHp || 99;
+      player.maxHp = difficulty.playerMaxHp || 99;
+      player.hp = player.maxHp;
       player.dashGlow = 0;
       player.shootCD = 0;
       player.hitFlash = 0;
@@ -2324,13 +2355,18 @@
         if (Math.hypot(player.knockX, player.knockY) < 0.004) { player.knockX = 0; player.knockY = 0; }
       }
 
-      const _playerMidZ = player.height + 0.9;
-      const _d3 = Math.sqrt((player.x-goalOrb.x)**2 + (player.y-goalOrb.y)**2 + (_playerMidZ-goalOrb.orbZ)**2);
-      if (!goalReached && _d3 < 2.5) {
-        goalReached = true;
-        goalFlashTimer = 300;
+      if (ENABLE_GOAL_ORB) {
+        const _playerMidZ = player.height + 0.9;
+        const _d3 = Math.sqrt((player.x-goalOrb.x)**2 + (player.y-goalOrb.y)**2 + (_playerMidZ-goalOrb.orbZ)**2);
+        if (!goalReached && _d3 < 2.5) {
+          goalReached = true;
+          goalFlashTimer = 300;
+        }
+        if (goalFlashTimer > 0) goalFlashTimer--;
+      } else {
+        goalReached = false;
+        goalFlashTimer = 0;
       }
-      if (goalFlashTimer > 0) goalFlashTimer--;
 
       if (jumpQ && (player.height <= player.groundHeight + 0.001 || player.jumpCount < 2)) {
         player.vz = JUMP_VEL;
@@ -2393,6 +2429,15 @@
       enemyUpdateTick++;
       for (const e of enemies) {
         if (e.dead) continue;
+        if (!Number.isFinite(e.x) || !Number.isFinite(e.y) || !Number.isFinite(e.z)) {
+          e.x = e.homeX;
+          e.y = e.homeY;
+          e.z = e.homeZ;
+          e.state = 'idle';
+          e.stateTimer = 0;
+          e.patternTimer = 0;
+          e.patternBurstCooldown = 0;
+        }
         if (e.state === 'dying') {
           e.deathTimer = Math.max(0, e.deathTimer - 1);
           e.deathAlpha = clamp(e.deathTimer / ENEMY_DEATH_TIME, 0, 1);
@@ -2521,7 +2566,8 @@
             const strikeDist = Math.hypot(player.x - strikeX, player.y - strikeY);
 
             if (!e.attackHit && strikeDist <= ENEMY_ATTACK_REACH && player.invTimer === 0) {
-              player.hp = Math.max(0, player.hp - ENEMY_ATTACK_DAMAGE);
+              const meleeDamage = Math.max(1, Math.round(ENEMY_ATTACK_DAMAGE * getDifficultyConfig().enemyDamageMul));
+              player.hp = Math.max(0, player.hp - meleeDamage);
               player.hitFlash = 15;
               player.invTimer = 28;
               player.knockX += e.attackDirX * KNOCKBACK_SPD * 2.2;
@@ -2722,7 +2768,8 @@
         const ez = e.z + e.h * 0.5;
         const dist = Math.hypot(ex - missile.x, ey - missile.y, ez - missile.z);
         if (dist > PLAYER_MISSILE_SPLASH_RADIUS) continue;
-        const damage = dist < 0.7 ? PLAYER_MISSILE_DAMAGE : PLAYER_MISSILE_SPLASH_DAMAGE;
+        const damageScale = getDifficultyConfig().playerDamageMul ?? 1;
+        const damage = Math.max(1, Math.round((dist < 0.7 ? PLAYER_MISSILE_DAMAGE : PLAYER_MISSILE_SPLASH_DAMAGE) * damageScale));
         e.hp = Math.max(0, e.hp - damage);
         e.invTimer = 20;
         if (e.hp <= 0) beginEnemyDeath(e);
@@ -2751,7 +2798,9 @@
       if (wallHit && wallHit.hitType === 'enemy' && wallHit.enemy) {
         const e = wallHit.enemy;
         if (e.invTimer === 0 && e.state !== 'dying') {
-          const damage = charged ? Math.max(PLAYER_CHARGE_DAMAGE, Math.round(PLAYER_CHARGE_DAMAGE * chargeLevel)) : PLAYER_SHOT_DAMAGE;
+          const damageScale = getDifficultyConfig().playerDamageMul ?? 1;
+          const baseDamage = charged ? Math.max(PLAYER_CHARGE_DAMAGE, Math.round(PLAYER_CHARGE_DAMAGE * chargeLevel)) : PLAYER_SHOT_DAMAGE;
+          const damage = Math.max(1, Math.round(baseDamage * damageScale));
           e.hp = Math.max(0, e.hp - damage);
           e.invTimer = 30;
           if (e.hp <= 0) beginEnemyDeath(e);
@@ -2799,20 +2848,23 @@
     }
 
     function spawnEnemyBullet(e, angle, speed = 0.12, size = 1.0, wave = false, options = {}) {
+      const difficulty = getDifficultyConfig();
       const perpAng = angle + Math.PI / 2;
       const startX = options.startX ?? (e.x + e.w / 2);
       const startY = options.startY ?? (e.y + e.d / 2);
       const startZ = options.startZ ?? (e.z + e.h * (options.zFactor ?? 0.7) + (options.zOffset ?? 0));
+      const adjustedSpeed = speed * (difficulty.enemyBulletSpeedMul ?? 1);
+      const adjustedDamage = Math.max(1, Math.round((options.damage ?? 5) * (difficulty.enemyDamageMul ?? 1)));
       enemyBullets.push({
         x: startX, y: startY,
-        vx: Math.cos(angle) * speed,
-        vy: Math.sin(angle) * speed,
+        vx: Math.cos(angle) * adjustedSpeed,
+        vy: Math.sin(angle) * adjustedSpeed,
         z: startZ,
         vz: options.vz ?? 0,
         life: options.life ?? 90,
         maxLife: options.life ?? 90,
         size,
-        damage: options.damage ?? 5,
+        damage: adjustedDamage,
         tint: options.tint ?? (wave ? 'wave' : 'single'),
         wave, wavePerpX: Math.cos(perpAng), wavePerpY: Math.sin(perpAng),
         arc: options.arc ?? false,
@@ -3075,6 +3127,10 @@
       if (gamePaused || gameOver) return;
       for (let i = enemyBullets.length - 1; i >= 0; i--) {
         const b = enemyBullets[i];
+        if (!Number.isFinite(b.x) || !Number.isFinite(b.y) || !Number.isFinite(b.z)) {
+          enemyBullets.splice(i, 1);
+          continue;
+        }
         b.x += b.vx;
         b.y += b.vy;
         b.z += b.vz || 0;
@@ -3112,6 +3168,10 @@
       if (gamePaused || gameOver) return;
       for (let i = playerMissiles.length - 1; i >= 0; i--) {
         const m = playerMissiles[i];
+        if (!Number.isFinite(m.x) || !Number.isFinite(m.y) || !Number.isFinite(m.z)) {
+          playerMissiles.splice(i, 1);
+          continue;
+        }
         m.age = (m.age || 0) + 1;
         m.speed = Math.min(PLAYER_MISSILE_MAX_SPEED, m.speed + PLAYER_MISSILE_ACCEL);
 
@@ -4110,13 +4170,13 @@ ctx.fillRect(minX, minY, w, h);
         let ang = Math.atan2(cy - player.y, cx - player.x) - player.angle;
         while (ang > Math.PI) ang -= Math.PI * 2;
         while (ang < -Math.PI) ang += Math.PI * 2;
-        if (Math.abs(ang) > HALF_FOV + 0.18) continue;
+        if (Math.abs(ang) > HALF_FOV + 0.28) continue;
         const dist = Math.hypot(cx - player.x, cy - player.y);
         if (dist < 0.3) continue;
         const correctedDist = dist * Math.cos(ang);
         const screenRatio = (ang + HALF_FOV) / FOV;
         const rayIndex = clamp(Math.floor(screenRatio * (RAYS - 1)), 0, RAYS - 1);
-        if (depthBuffer[rayIndex] < correctedDist - 0.1) continue;
+        if (!isLocked && depthBuffer[rayIndex] < correctedDist - 0.22) continue;
 
         const flash = e.invTimer > 0 && Math.floor(e.invTimer / 4) % 2 === 1;
         const meleeFx = e.meleeFx > 0;
@@ -4134,6 +4194,25 @@ ctx.fillRect(minX, minY, w, h);
         } else {
           drawEnemyGirlSprite(e, flash, isLocked, meleeFx, isDying ? e.deathAlpha : 1, isDying);
         }
+      }
+    }
+
+    function getEnemyEyeGlow(e) {
+      if (e.state === 'dying') return 0;
+      const pulse = 0.72 + Math.sin(performance.now() * 0.016) * 0.28;
+      switch (e.state) {
+        case 'charge':
+        case 'teleport_charge':
+        case 'overhead_charge':
+          return 0.5 + pulse * 0.45;
+        case 'lunge_attack':
+        case 'teleport_arc_burst':
+        case 'overhead_fire':
+          return 0.95;
+        case 'recover':
+          return 0.28;
+        default:
+          return Math.max(0, e.orbGlow * 0.2, e.overheadGlow * 0.25);
       }
     }
 
@@ -4166,6 +4245,24 @@ ctx.fillRect(minX, minY, w, h);
       }
 
       drawEnemyPixelWaveOverlay(e, drawX, drawY, spriteW, spriteH);
+
+      const eyeGlow = getEnemyEyeGlow(e);
+      if (eyeGlow > 0.05) {
+        const leftEyeX = drawX + spriteW * 0.42;
+        const rightEyeX = drawX + spriteW * 0.58;
+        const eyeY = drawY + spriteH * 0.27;
+        const eyeR = Math.max(4, spriteW * 0.06);
+        ctx.save();
+        ctx.shadowColor = `rgba(140,255,255,${0.95 * eyeGlow})`;
+        ctx.shadowBlur = 16 + eyeR * 1.5;
+        ctx.fillStyle = `rgba(120,255,240,${0.36 * eyeGlow})`;
+        ctx.beginPath(); ctx.arc(leftEyeX, eyeY, eyeR * 2.2, 0, Math.PI * 2); ctx.fill();
+        ctx.beginPath(); ctx.arc(rightEyeX, eyeY, eyeR * 2.2, 0, Math.PI * 2); ctx.fill();
+        ctx.fillStyle = `rgba(240,255,255,${0.92 * eyeGlow})`;
+        ctx.beginPath(); ctx.arc(leftEyeX, eyeY, eyeR, 0, Math.PI * 2); ctx.fill();
+        ctx.beginPath(); ctx.arc(rightEyeX, eyeY, eyeR, 0, Math.PI * 2); ctx.fill();
+        ctx.restore();
+      }
 
       if (e.overheadCharge > 0 || e.state === 'overhead_fire') {
         const headOrb = project3D(cx, cy, e.z + e.h + 0.42 + e.overheadCharge * 0.18);
@@ -4808,18 +4905,14 @@ ctx.fillRect(minX, minY, w, h);
     function drawGun() {
       if (!armCannonImg.complete || armCannonImg.naturalWidth === 0) return;
 
-      // まずは小さめに固定
-      const cannonWidth = WIDTH * 0.37;
+      const cannonWidth = WIDTH * 0.42;
       const cannonHeight = cannonWidth * (armCannonImg.naturalHeight / armCannonImg.naturalWidth);
 
-      // 右下に置く
-      const x = WIDTH - cannonWidth - 150;
-      const y = HEIGHT - cannonHeight + 10;
+      const x = WIDTH - cannonWidth - 82;
+      const y = HEIGHT - cannonHeight + 34;
 
       ctx.save();
       ctx.globalAlpha = 0.95;
-
-      // 反転・回転なしでまず安定表示
       ctx.drawImage(
         armCannonImg,
         x,
@@ -5063,7 +5156,7 @@ ctx.fillRect(minX, minY, w, h);
       }
 
       // goal orb
-      if (!goalReached && goalOrb.x >= x0 && goalOrb.x <= x1 && goalOrb.y >= y0 && goalOrb.y <= y1) {
+      if (ENABLE_GOAL_ORB && !goalReached && goalOrb.x >= x0 && goalOrb.x <= x1 && goalOrb.y >= y0 && goalOrb.y <= y1) {
         const gox = ox + (goalOrb.x - x0) * scale;
         const goy = oy + (goalOrb.y - y0) * scale;
         const gt = Date.now() / 600;
@@ -5583,6 +5676,7 @@ ctx.fillRect(minX, minY, w, h);
     }
 
     function drawGoalOrb() {
+      if (!ENABLE_GOAL_ORB) return;
       if (goalReached) return;
       const t = Date.now() / 1000;
       const bobZ = goalOrb.orbZ + Math.sin(t * 2.2) * 0.2;
@@ -5691,7 +5785,7 @@ ctx.fillRect(minX, minY, w, h);
       drawMinimap();
       drawGoalOrb();
       drawDamageFlash();
-      if (goalFlashTimer > 0) {
+      if (ENABLE_GOAL_ORB && goalFlashTimer > 0) {
         const alpha = Math.min(1, goalFlashTimer / 60) * 0.9;
         ctx.fillStyle = `rgba(200,255,80,${alpha * 0.14})`;
         ctx.fillRect(0, 0, WIDTH, HEIGHT);
