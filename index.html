@@ -4994,6 +4994,19 @@ ctx.fillRect(minX, minY, w, h);
     }
 
     ensureLoopRunning();
+      // PC keyboard missile input
+        document.addEventListener("keydown", e => {
+          if (e.code !== "KeyR") return;
+        
+          if (typeof gameStarted !== "undefined" && !gameStarted) return;
+          if (typeof gamePaused !== "undefined" && gamePaused) return;
+          if (typeof gameOver !== "undefined" && gameOver) return;
+        
+          if (typeof fireMissile === "function") {
+            fireMissile();
+            e.preventDefault();
+          }
+        }, true);
   </script>
 </body>
 </html>      
