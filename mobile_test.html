@@ -235,6 +235,10 @@
       return isTouchControlsVisible() && viewportH > viewportW;
     }
 
+    function hasActiveTouchId(id) {
+      return id !== null && id !== undefined;
+    }
+
     function layoutTouchControls() {
       const stickInsetX = WIDTH * 0.18;
       const stickCenterY = HEIGHT * 0.5;
@@ -243,7 +247,7 @@
       mobileTouch.joyBaseX = stickInsetX;
       mobileTouch.joyBaseY = stickCenterY;
 
-      if (!mobileTouch.joystickId) {
+      if (!hasActiveTouchId(mobileTouch.joystickId)) {
         mobileTouch.joyKnobX = mobileTouch.joyBaseX;
         mobileTouch.joyKnobY = mobileTouch.joyBaseY;
       }
@@ -265,7 +269,7 @@
       mobileTouch.jumpButton.x = mobileTouch.aimBaseX + ringOffset;
       mobileTouch.jumpButton.y = mobileTouch.aimBaseY + ringOffset;
 
-      if (!mobileTouch.aimStickId) {
+      if (!hasActiveTouchId(mobileTouch.aimStickId)) {
         mobileTouch.aimKnobX = mobileTouch.aimBaseX;
         mobileTouch.aimKnobY = mobileTouch.aimBaseY;
       }
@@ -358,7 +362,7 @@
 
     function updateTouchAimFromStick() {
       if (typeof player === "undefined") return;
-      if (!mobileTouch.aimStickId) return;
+      if (!hasActiveTouchId(mobileTouch.aimStickId)) return;
 
       const deadzone = 0.16;
       const turnSensitivity = 0.024;
