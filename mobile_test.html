@@ -50,18 +50,17 @@
 
       const viewportW = window.visualViewport?.width || window.innerWidth;
       const viewportH = window.visualViewport?.height || window.innerHeight;
-      const safeScale = 0.96;
-      const scale = Math.min(viewportW / WIDTH, viewportH / HEIGHT) * safeScale;
+      const portrait = viewportH > viewportW;
+      const safeScale = portrait ? 0.94 : 0.96;
+      const targetHeight = portrait ? viewportH * 0.62 : viewportH;
+      const scale = Math.min(viewportW / WIDTH, targetHeight / HEIGHT) * safeScale;
 
       canvas.style.position = "fixed";
       canvas.style.left = "50%";
-      canvas.style.top = "50%";
-      canvas.style.width = "100vw";
-      canvas.style.height = "100vh";
-      canvas.style.position = "fixed";
-      canvas.style.left = "0";
-      canvas.style.top = "0";
-      canvas.style.transform = "translate(-50%, -50%)";
+      canvas.style.top = portrait ? "8px" : "50%";
+      canvas.style.width = `${WIDTH * scale}px`;
+      canvas.style.height = `${HEIGHT * scale}px`;
+      canvas.style.transform = portrait ? "translateX(-50%)" : "translate(-50%, -50%)";
       canvas.style.margin = "0";
       canvas.style.display = "block";
       canvas.style.touchAction = "none";
@@ -5719,49 +5718,5 @@ ctx.fillRect(minX, minY, w, h);
 
     ensureLoopRunning();
   </script>
-    
-    <button id="forceFullscreenBtn" type="button">FULL</button>
-    
-    <script>
-      (function () {
-        const btn = document.getElementById("forceFullscreenBtn");
-    
-        async function forceFullscreen(e) {
-          if (e) {
-            e.preventDefault();
-            e.stopPropagation();
-          }
-    
-          const target = document.documentElement;
-    
-          try {
-            if (!document.fullscreenElement) {
-              const request =
-                target.requestFullscreen ||
-                target.webkitRequestFullscreen ||
-                target.msRequestFullscreen;
-    
-              if (request) {
-                await request.call(target);
-              }
-            }
-    
-            if (screen.orientation && screen.orientation.lock) {
-              try {
-                await screen.orientation.lock("landscape");
-              } catch (_) {
-                // Some mobile browsers block orientation lock.
-              }
-            }
-          } catch (err) {
-            console.warn("Fullscreen failed:", err);
-          }
-        }
-    
-        btn.addEventListener("pointerdown", forceFullscreen, { passive: false });
-        btn.addEventListener("touchstart", forceFullscreen, { passive: false });
-        btn.addEventListener("click", forceFullscreen);
-      })();
-    </script>
 </body>
 </html>
