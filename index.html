@@ -32,15 +32,15 @@
 </head>
 <body>
   <canvas id="game" width="1280" height="720"></canvas>
-  <div id="hud">WASD move · ←/→ look · X shoot · Shift dash · B jump · ZL/C lock-on · Weapon toggle supported · Pro Controller supported</div>
+  <div id="hud">PC: WASD move · Mouse look · Left Click shoot/charge · Right Click lock-on · Space jump · Shift dash · R missile · 1/2 weapon · V visor · Esc/P pause · Pro Controller supported</div>
 
   <script>
     const canvas = document.getElementById('game');
     const ctx = canvas.getContext('2d');
-    const armCannonImg = new Image();
-      armCannonImg.src = "assets/images/arm_cannon_blue.png";
     const enemyGirlImg = new Image();
       enemyGirlImg.src = "assets/images/enemy_girl.png";
+    const armCannonSound = new Audio('ManualEdit/assets/sounds/arm_cannon_sound.ogg');
+      armCannonSound.volume = 0.7;
     const armCannonSound = new Audio('ManualEdit/assets/sounds/arm_cannon_sound.ogg');
     armCannonSound.volume = 0.7;
     const floorTileImg = new Image();
@@ -66,6 +66,8 @@
     const DASH_MULT = 2.3;
     const AIM_PITCH_SPEED = 0.014;
     const MAX_PITCH = 0.42;
+    const MOUSE_SENS_X = 0.0028;
+    const MOUSE_SENS_Y = 0.0022;
     const CAMERA_EYE_HEIGHT = 1.65;
     const DEFAULT_CAMERA_PITCH = -0.09;
     const JUMP_VEL = 0.162;
@@ -204,6 +206,9 @@
     let dashQ = false;
     let dashHeld = false;
     let lockHeld = false;
+    let mouseShootHeld = false;
+    let mouseLockHeld = false;
+    let mouseLookEnabled = true;
     let gpPrev = {};
     let debugPressedButtons = "none";
     let showDebugLabels = false;
@@ -279,6 +284,8 @@
 
     function openPauseMenu() {
       if (!gameStarted) return;
+      clearMouseInputState();
+      releaseGamePointerLock();
       pauseGame();
       syncHpSettingFromPlayer();
       pauseMenuSelection = 0;
@@ -333,6 +340,28 @@
       hpSettingInput = String(nextHp);
 
       player.hitFlash = 0;
+    }
+
+    function clearMouseInputState() {
+      mouseShootHeld = false;
+      mouseLockHeld = false;
+    }
+
+    function hasPointerLock() {
+      return document.pointerLockElement === canvas;
+    }
+
+    function requestGamePointerLock() {
+      if (!mouseLookEnabled || !gameStarted || gamePaused || gameOver) return;
+      if (!hasPointerLock() && canvas.requestPointerLock) {
+        canvas.requestPointerLock();
+      }
+    }
+
+    function releaseGamePointerLock() {
+      if (hasPointerLock() && document.exitPointerLock) {
+        document.exitPointerLock();
+      }
     }
 
     function moveStartMenuSelection(delta) {
@@ -469,28 +498,23 @@
       keys["ArrowUp"] = false;
       keys["ArrowDown"] = false;
 
-      if ((e.code === "ArrowLeft" || e.code === "ArrowRight") && !e.repeat) {
-        if (keys['KeyX'] || keys['KeyY']) {
-          currentWeapon = currentWeapon === 'normal' ? 'wave' : 'normal';
-        } else {
-          visorMode = visorMode === "xray" ? "normal" : "xray";
-        }
-        e.preventDefault();
-        return;
-      }
-
-      if (e.code === "ArrowUp" || e.code === "ArrowDown") {
-        e.preventDefault();
-        return;
-      }
-
       if (e.code === "KeyV" && !e.repeat) {
         visorMode = visorMode === "xray" ? "normal" : "xray";
+      }
+      if (e.code === "Digit1" && !e.repeat) {
+        currentWeapon = 'normal';
+        e.preventDefault();
+        return;
+      }
+      if (e.code === "Digit2" && !e.repeat) {
+        currentWeapon = 'wave';
+        e.preventDefault();
+        return;
       }
       if (!keys[e.code] && ['KeyX', 'KeyY'].includes(e.code)) shootQ = true;
       if (e.code === 'KeyR' && !e.repeat) fireMissile();
       if (!keys[e.code] && e.code === 'Space') jumpQ = true;
-      if (!keys[e.code] && e.code === 'KeyF') dashQ = true;
+      if (!keys[e.code] && (e.code === 'KeyF' || e.code === 'ShiftLeft' || e.code === 'ShiftRight')) dashQ = true;
       if (!keys[e.code] && e.code === 'KeyL') showDebugLabels = !showDebugLabels;
       if (!keys[e.code] && e.code === 'KeyH') showHeightGuides = !showHeightGuides;
       if (!keys[e.code] && e.code === 'KeyG') showCoordinateGrid = !showCoordinateGrid;
@@ -508,11 +532,59 @@
     function handlePointerDown(e) {
       if (!gameStarted) {
         startGame();
+        if (e.target === canvas) {
+          requestGamePointerLock();
+        }
         e.preventDefault();
         return;
       }
       if (gameOver) {
         restartGame();
+        e.preventDefault();
+        return;
+      }
+      if (gamePaused) {
+        return;
+      }
+      if (e.target === canvas) {
+        requestGamePointerLock();
+      }
+    }
+
+    function handleMouseDown(e) {
+      if (!gameStarted || gamePaused || gameOver) return;
+      if (e.button === 0) {
+        mouseShootHeld = true;
+        requestGamePointerLock();
+        e.preventDefault();
+        return;
+      }
+      if (e.button === 2) {
+        mouseLockHeld = true;
+        requestGamePointerLock();
+        e.preventDefault();
+      }
+    }
+
+    function handleMouseUp(e) {
+      if (e.button === 0) {
+        mouseShootHeld = false;
+      } else if (e.button === 2) {
+        mouseLockHeld = false;
+      }
+    }
+
+    function handleMouseMove(e) {
+      if (!gameStarted || gamePaused || gameOver) return;
+      if (!hasPointerLock()) return;
+      player.angle -= e.movementX * MOUSE_SENS_X;
+      if (!player.lockTarget) {
+        player.pitch = clamp(player.pitch - e.movementY * MOUSE_SENS_Y, -MAX_PITCH, MAX_PITCH);
+      }
+    }
+
+    function handleContextMenu(e) {
+      if (gameStarted) {
         e.preventDefault();
       }
     }
@@ -610,6 +682,8 @@
       dashQ = false;
       dashHeld = false;
       lockHeld = false;
+      clearMouseInputState();
+      releaseGamePointerLock();
 
       keys["ArrowLeft"] = false;
       keys["ArrowRight"] = false;
@@ -697,6 +771,8 @@
       stopGame();
       removeManagedListeners();
       clearTransientGameObjects();
+      clearMouseInputState();
+      releaseGamePointerLock();
       armCannonSound.pause();
       armCannonSound.currentTime = 0;
       dashHeld = false;
@@ -711,7 +787,9 @@
 
     function handleVisibilityChange() {
       if (document.hidden) {
+        clearMouseInputState();
         stopGame();
+        releaseGamePointerLock();
         armCannonSound.pause();
       } else if (!cleanupDone) {
         ensureLoopRunning();
@@ -731,6 +809,10 @@
       addManagedListener(window, 'keydown', handleKeyDown);
       addManagedListener(window, 'keyup', handleKeyUp);
       addManagedListener(window, 'pointerdown', handlePointerDown);
+      addManagedListener(window, 'mousedown', handleMouseDown);
+      addManagedListener(window, 'mouseup', handleMouseUp);
+      addManagedListener(window, 'mousemove', handleMouseMove);
+      addManagedListener(window, 'contextmenu', handleContextMenu);
       addManagedListener(window, 'pointerdown', forceRestartIfNeeded, true);
       addManagedListener(window, 'mousedown', forceRestartIfNeeded, true);
       addManagedListener(window, 'touchstart', forceRestartIfNeeded, true);
@@ -1394,7 +1476,7 @@
     }
 
     function isShootHeld() {
-      return !!(keys.KeyX || keys.KeyY || keys._shootHeld);
+      return !!(keys.KeyX || keys.KeyY || keys._shootHeld || mouseShootHeld);
     }
 
     function isEnemyOverlappingAt(movingEnemy, nx, ny, padding = 0.35) {
@@ -1470,7 +1552,7 @@
       if (player.dashCD  > 0) player.dashCD--;
       if (pillarDebugMessage.timer > 0) pillarDebugMessage.timer--;
       if (shotHitMarker && shotHitMarker.timer > 0) shotHitMarker.timer--;
-      const lockActive = lockHeld || !!keys.KeyC;
+      const lockActive = lockHeld || mouseLockHeld || !!keys.KeyC;
       const moveMult = (keys.ShiftLeft || keys.ShiftRight || dashHeld) ? DASH_MULT : 1;
       if (moveMult > 1) player.dashGlow = 6;
 
@@ -1505,8 +1587,10 @@
       if (keys.KeyS || keys.ArrowDown || keys._back) step -= MOVE_SPEED * moveMult;
       // lock-on sidestep: 2.5x strafe boost when locked on
       const sidestepMult = player.lockTarget ? 2.5 : 1;
-      if (keys.KeyA || keys._left) { strafe -= STRAFE_SPEED * moveMult * sidestepMult; if (player.lockTarget) player.dashGlow = 10; }
-      if (keys.KeyD || keys._right) { strafe += STRAFE_SPEED * moveMult * sidestepMult; if (player.lockTarget) player.dashGlow = 10; }
+      if (keys.KeyA) { strafe += STRAFE_SPEED * moveMult * sidestepMult; if (player.lockTarget) player.dashGlow = 10; }
+      if (keys.KeyD) { strafe -= STRAFE_SPEED * moveMult * sidestepMult; if (player.lockTarget) player.dashGlow = 10; }
+      if (keys._left) { strafe -= STRAFE_SPEED * moveMult * sidestepMult; if (player.lockTarget) player.dashGlow = 10; }
+      if (keys._right) { strafe += STRAFE_SPEED * moveMult * sidestepMult; if (player.lockTarget) player.dashGlow = 10; }
 
       const dx = Math.cos(player.angle);
       const dy = Math.sin(player.angle);
