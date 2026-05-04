@@ -486,20 +486,23 @@
         return true;
       }
 
-      if (p.x < WIDTH * 0.42) {
+      // Left movement joystick
+      if (p.x < WIDTH * 0.40) {
         mobileTouch.joystickId = id;
         updateTouchJoystick(p.x, p.y);
         return true;
       }
       
-      // Right AIM area.
-      // Buttons are already checked above, so any remaining touch on the right side
-      // should start aim control.
-      if (p.x >= WIDTH * 0.50) {
+      // Right AIM joystick fallback area.
+      // All action buttons are already checked above, so anything outside the left
+      // movement area should reliably become AIM control.
+      if (p.x >= WIDTH * 0.40) {
         mobileTouch.aimStickId = id;
         updateAimJoystick(p.x, p.y);
         return true;
       }
+      
+      return false;
       
       return false;
 
