@@ -104,6 +104,48 @@
       box-shadow: 0 0 22px rgba(120,255,255,0.34);
       border-color: rgba(120,255,255,0.72);
     }
+    #rotateHint {
+      position: fixed;
+      left: 50%;
+      transform: translateX(-50%);
+      z-index: 45;
+      display: none;
+      pointer-events: none;
+      opacity: 0;
+      transition: opacity 220ms ease;
+    }
+    #rotateHint.visible {
+      display: block;
+      opacity: 1;
+    }
+    #rotateHintCard {
+      min-width: 228px;
+      max-width: min(82vw, 320px);
+      padding: 10px 14px 12px;
+      border-radius: 14px;
+      border: 1px solid rgba(255, 210, 120, 0.34);
+      background: linear-gradient(180deg, rgba(7, 12, 20, 0.76) 0%, rgba(4, 8, 16, 0.92) 100%);
+      box-shadow: 0 8px 24px rgba(0,0,0,0.28), 0 0 18px rgba(255, 196, 92, 0.14);
+      backdrop-filter: blur(8px);
+      text-align: center;
+    }
+    #rotateHintIcon {
+      font-size: 26px;
+      line-height: 1;
+      color: rgba(255, 231, 180, 0.95);
+      margin-bottom: 6px;
+      text-shadow: 0 0 12px rgba(255, 193, 90, 0.22);
+    }
+    #rotateHintTitle {
+      color: rgba(255, 236, 196, 0.96);
+      font: 700 13px/1.25 monospace;
+      letter-spacing: 0.4px;
+      margin-bottom: 4px;
+    }
+    #rotateHintText {
+      color: rgba(235, 246, 255, 0.84);
+      font: 12px/1.35 monospace;
+    }
   </style>
 </head>
 <body>
@@ -125,6 +167,13 @@
     <button id="dockPause" class="dock-btn" type="button">II</button>
     <button id="dockFull" class="dock-btn" type="button">FULL</button>
   </div>
+  <div id="rotateHint" aria-hidden="true">
+    <div id="rotateHintCard">
+      <div id="rotateHintIcon">⤾</div>
+      <div id="rotateHintTitle">Landscape Recommended</div>
+      <div id="rotateHintText">Rotate your phone for a smoother, more comfortable control layout.</div>
+    </div>
+  </div>
 
   <script>
     const canvas = document.getElementById('game');
@@ -140,6 +189,7 @@
     const dockJumpEl = document.getElementById('dockJump');
     const dockPauseEl = document.getElementById('dockPause');
     const dockFullEl = document.getElementById('dockFull');
+    const rotateHintEl = document.getElementById('rotateHint');
         // ===== Minimal Mobile Touch Controls =====
     // Adds: left joystick, right-side aim swipe, FIRE button, PAUSE button.
     // Designed to reuse existing keyboard/game logic as much as possible.
@@ -154,6 +204,30 @@
 
     function hasActiveTouchId(id) {
       return id !== null && id !== undefined;
+    }
+
+    let rotateHintTimer = null;
+    let rotateHintDismissed = false;
+
+    function hideRotateHint() {
+      if (!rotateHintEl) return;
+      rotateHintEl.classList.remove("visible");
+    }
+
+    function showRotateHintTemporarily() {
+      if (!rotateHintEl || rotateHintDismissed || !isPortraitStackedMode()) return;
+      rotateHintEl.classList.add("visible");
+      if (rotateHintTimer) clearTimeout(rotateHintTimer);
+      rotateHintTimer = setTimeout(() => {
+        hideRotateHint();
+        rotateHintDismissed = true;
+      }, 5200);
+    }
+
+    function updateRotateHintPosition(topAreaH, dockTop) {
+      if (!rotateHintEl) return;
+      const hintTop = Math.max(12, Math.round(dockTop - 74));
+      rotateHintEl.style.top = `${hintTop}px`;
     }
 
     function fitCanvasToViewport() {
@@ -201,14 +275,19 @@
       if (mobileDock) {
         mobileDock.classList.toggle("visible", portraitStacked);
         if (portraitStacked) {
-          mobileDock.style.top = `${viewportOffsetTop + topAreaH}px`;
+          const dockTop = viewportOffsetTop + topAreaH;
+          mobileDock.style.top = `${dockTop}px`;
           mobileDock.style.height = `${dockHeight}px`;
           mobileDock.style.bottom = "auto";
           layoutPortraitDockFromLandscape();
+          updateRotateHintPosition(topAreaH, dockTop);
+          showRotateHintTemporarily();
         } else {
           mobileDock.style.top = "";
           mobileDock.style.height = "";
           mobileDock.style.bottom = "";
+          hideRotateHint();
+          rotateHintDismissed = false;
         }
       }
       window.scrollTo(0, 0);
@@ -389,39 +468,33 @@
       const panelW = rect.width || window.innerWidth;
       const panelH = rect.height || Math.round(window.innerHeight * 0.5);
 
-      // Portrait target:
-      // - MOVE remains on the left half.
-      // - AIM/actions stay entirely in the right half.
-      // - PAUSE and FULL sit on the same top utility row.
-      const rightHalfX = panelW * 0.5;
-      const rightHalfW = panelW - rightHalfX;
-      const edgeInset = Math.max(6, panelW * 0.015);
-
-      const padSize = Math.min(130, Math.max(104, panelW * 0.29));
+      const edgeInset = Math.max(12, panelW * 0.03);
+      const utilitySize = Math.min(72, Math.max(58, panelW * 0.16));
+      const padSize = Math.min(138, Math.max(108, panelW * 0.30));
       const aimSize = padSize;
       const knobSize = Math.round(52 * (padSize / 130));
-
-      const buttonSize = Math.min(66, Math.max(56, panelW * 0.16));
+      const buttonSize = Math.min(66, Math.max(54, panelW * 0.15));
       const buttonFireSize = buttonSize;
-      const aimRadiusPx = aimSize / 2;
       const buttonRadiusPx = buttonSize / 2;
+      const aimRadiusPx = aimSize / 2;
 
-      // Keep the right-side cluster compact enough to fit from center to right edge.
-      const ringOffsetX = Math.max(buttonRadiusPx * 1.45, aimRadiusPx + buttonRadiusPx - 31);
-      const ringOffsetY = Math.max(aimRadiusPx + buttonRadiusPx - 4, panelH * 0.20);
+      // Shift the whole control cluster upward for easier tapping.
+      const utilityY = Math.max(utilitySize / 2 + 8, panelH * 0.10);
+      const centerY = panelH * 0.52;
+      const aimY = centerY + 8;
+      const joyY = centerY + 10;
 
-      const targetAimX = rightHalfX + rightHalfW * 0.50;
-      const minAimX = rightHalfX + ringOffsetX + buttonRadiusPx;
-      const maxAimX = panelW - edgeInset - ringOffsetX - buttonRadiusPx;
-      const aimX = Math.max(minAimX, Math.min(maxAimX, targetAimX));
-      const joyX = Math.min(
-        rightHalfX - padSize / 2 - edgeInset,
-        Math.max(edgeInset + padSize / 2, panelW - aimX)
-      );
+      // Left-side move pad.
+      const joyX = edgeInset + padSize / 2 + 2;
 
-      const aimY = panelH * 0.62;
-      const joyY = aimY;
-      const utilityY = Math.max(buttonRadiusPx + 8, panelH * 0.14);
+      // Right-side action cluster stays fully inside the right half.
+      const rightMinX = panelW * 0.5 + aimRadiusPx + buttonRadiusPx + 10;
+      const rightMaxX = panelW - edgeInset - aimRadiusPx - buttonRadiusPx - 4;
+      const targetAimX = panelW * 0.74;
+      const aimX = Math.max(rightMinX, Math.min(rightMaxX, targetAimX));
+
+      const ringOffsetX = aimRadiusPx + buttonRadiusPx - 10;
+      const ringOffsetY = aimRadiusPx + buttonRadiusPx - 10;
       const topButtonY = aimY - ringOffsetY;
       const bottomButtonY = aimY + ringOffsetY;
 
@@ -436,10 +509,12 @@
         dockFullEl.style.display = "flex";
       }
 
+      // MIN on top-left, PAUSE on top-right.
+      setDockElementBox(dockFullEl, edgeInset + utilitySize / 2, utilityY, utilitySize);
+      setDockElementBox(dockPauseEl, panelW - edgeInset - utilitySize / 2, utilityY, utilitySize);
+
       setDockElementBox(movePadEl, joyX, joyY, padSize);
       setDockElementBox(aimPadEl, aimX, aimY, aimSize);
-      setDockElementBox(dockPauseEl, aimX - ringOffsetX, utilityY, buttonSize);
-      setDockElementBox(dockFullEl, aimX + ringOffsetX, utilityY, buttonSize);
       setDockElementBox(dockMissileEl, aimX - ringOffsetX, topButtonY, buttonSize);
       setDockElementBox(dockFireEl, aimX + ringOffsetX, topButtonY, buttonFireSize);
       setDockElementBox(dockDashEl, aimX - ringOffsetX, bottomButtonY, buttonSize);
@@ -1079,6 +1154,12 @@
       gamePaused ? closePauseMenu() : openPauseMenu();
     });
     bindPortraitButton(dockFullEl, () => { requestMobileFullscreen(); });
+    if (rotateHintEl) {
+      rotateHintEl.addEventListener("pointerdown", () => {
+        rotateHintDismissed = true;
+        hideRotateHint();
+      });
+    }
     const armCannonImg = new Image();
       armCannonImg.src =
         location.href.includes('/Projects/job_search/') || location.href.includes('/waveprime_workspace/')
@@ -6121,49 +6202,5 @@ ctx.fillRect(minX, minY, w, h);
 
     ensureLoopRunning();
   </script>
-    
-    <button id="forceFullscreenBtn" type="button">FULL</button>
-    
-    <script>
-      (function () {
-        const btn = document.getElementById("forceFullscreenBtn");
-    
-        async function forceFullscreen(e) {
-          if (e) {
-            e.preventDefault();
-            e.stopPropagation();
-          }
-    
-          const target = document.documentElement;
-    
-          try {
-            if (!document.fullscreenElement) {
-              const request =
-                target.requestFullscreen ||
-                target.webkitRequestFullscreen ||
-                target.msRequestFullscreen;
-    
-              if (request) {
-                await request.call(target);
-              }
-            }
-    
-            if (screen.orientation && screen.orientation.lock) {
-              try {
-                await screen.orientation.lock("landscape");
-              } catch (_) {
-                // Some mobile browsers block orientation lock.
-              }
-            }
-          } catch (err) {
-            console.warn("Fullscreen failed:", err);
-          }
-        }
-    
-        btn.addEventListener("pointerdown", forceFullscreen, { passive: false });
-        btn.addEventListener("touchstart", forceFullscreen, { passive: false });
-        btn.addEventListener("click", forceFullscreen);
-      })();
-    </script>
 </body>
 </html>
