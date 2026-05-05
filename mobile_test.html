@@ -358,23 +358,23 @@
       const rightHalfX = panelW * 0.5;
       const rightHalfW = panelW * 0.5;
       const edgeInset = Math.max(16, panelW * 0.03);
+      const topGapY = panelH * 0.14;
 
-      const joyX = leftHalfW * 0.34;
-      const joyY = panelH * 0.56;
-      const aimY = panelH * 0.60;
-
-      const padSize = Math.min(170, Math.max(142, panelW * 0.24));
       const aimSize = Math.min(140, Math.max(118, panelW * 0.19));
+      const padSize = aimSize;
       const knobSize = Math.round(56 * (padSize / 148));
       const buttonFireSize = Math.min(86, Math.max(76, panelW * 0.118));
       const buttonSize = Math.min(78, Math.max(68, panelW * 0.102));
       const aimRadiusPx = aimSize / 2;
       const buttonRadiusPx = buttonSize / 2;
+      const joyX = leftHalfW * 0.34;
+      const aimY = panelH * 0.62;
+      const joyY = aimY;
       const ringOffsetX = aimRadiusPx + buttonRadiusPx - 6;
       const ringOffsetY = aimRadiusPx + buttonRadiusPx - 4;
       const topButtonY = aimY - ringOffsetY;
       const bottomButtonY = aimY + ringOffsetY;
-      const utilityY = Math.max(buttonSize * 0.65, topButtonY - buttonSize * 1.15);
+      const utilityY = Math.max(buttonSize * 0.7, topGapY + buttonSize * 0.55);
       const minCenterX = rightHalfX + edgeInset + Math.max(aimRadiusPx, buttonRadiusPx);
       const maxCenterX = panelW - edgeInset - Math.max(ringOffsetX + buttonFireSize / 2, ringOffsetX + buttonRadiusPx);
       const aimX = Math.max(minCenterX, Math.min(maxCenterX, rightHalfX + rightHalfW * 0.56));
