@@ -178,12 +178,12 @@
       const viewportW = window.visualViewport?.width || window.innerWidth;
       const viewportH = window.visualViewport?.height || window.innerHeight;
       const portrait = viewportH > viewportW;
-      const touchVisible = isTouchControlsVisible();
-      const dockHeight = portrait && touchVisible
+      const dockVisible = isMobileDockVisible();
+      const dockHeight = dockVisible
         ? Math.max(220, Math.min(320, Math.round(viewportH * 0.34)))
         : 0;
-      const gameGap = portrait && touchVisible ? 8 : 0;
-      const topAreaH = portrait && touchVisible
+      const gameGap = dockVisible ? 8 : 0;
+      const topAreaH = dockVisible
         ? Math.max(220, viewportH - dockHeight - gameGap)
         : viewportH;
       const scale = Math.min(viewportW / WIDTH, topAreaH / HEIGHT) * (portrait ? 0.985 : 0.96);
@@ -218,8 +218,8 @@
       document.body.style.width = "100%";
       document.body.style.touchAction = "none";
       if (mobileDock) {
-        mobileDock.classList.toggle("visible", portrait && touchVisible);
-        if (portrait && touchVisible) {
+        mobileDock.classList.toggle("visible", dockVisible);
+        if (dockVisible) {
           mobileDock.style.height = `${dockHeight}px`;
           mobileDock.style.minHeight = `${dockHeight}px`;
           mobileDock.style.top = `${Math.max(0, viewportH - dockHeight)}px`;
@@ -312,7 +312,7 @@
     };
 
     function isPortraitTouchLayout() {
-      return isTouchControlsVisible() && (window.visualViewport?.height || window.innerHeight) > (window.visualViewport?.width || window.innerWidth);
+      return isMobileDockVisible();
     }
 
     function hasActiveTouchId(id) {
@@ -320,12 +320,35 @@
     }
 
     function isTouchControlsVisible() {
-      if (!TOUCH_CONTROLS_ENABLED) return false;
+      if (!isTouchDevice()) return false;
       if (typeof gameStarted !== "undefined" && !gameStarted) return false;
       if (typeof gamePaused !== "undefined" && gamePaused) return false;
       if (typeof gameOver !== "undefined" && gameOver) return false;
 
-      return ("ontouchstart" in window) || navigator.maxTouchPoints > 0;
+      return true;
+    }
+
+    function isTouchDevice() {
+      return TOUCH_CONTROLS_ENABLED && (("ontouchstart" in window) || navigator.maxTouchPoints > 0);
+    }
+
+    function isPortraitViewport() {
+      return (window.visualViewport?.height || window.innerHeight) > (window.visualViewport?.width || window.innerWidth);
+    }
+
+    function isMobileDockVisible() {
+      return isTouchDevice() && isPortraitViewport();
+    }
+
+    function startTouchGameplayIfNeeded() {
+      if (typeof gameStarted !== "undefined" && !gameStarted && typeof startGame === "function") {
+        startGame();
+      }
+      return typeof gameStarted !== "undefined"
+        && gameStarted
+        && !(typeof gamePaused !== "undefined" && gamePaused)
+        && !(typeof gameOver !== "undefined" && gameOver)
+        && !(typeof cleanupDone !== "undefined" && cleanupDone);
     }
 
 
@@ -728,6 +751,10 @@
 
       padEl.addEventListener("touchstart", e => {
         if (!isPortraitTouchLayout()) return;
+        if (!startTouchGameplayIfNeeded()) {
+          e.preventDefault();
+          return;
+        }
         const touch = e.changedTouches[0];
         if (!touch) return;
         activeTouchId = touch.identifier;
@@ -737,6 +764,10 @@
 
       padEl.addEventListener("touchmove", e => {
         if (!isPortraitTouchLayout()) return;
+        if (!isTouchControlsVisible()) {
+          e.preventDefault();
+          return;
+        }
         for (const touch of e.changedTouches) {
           if (touch.identifier === activeTouchId) {
             applyTouch(touch);
@@ -791,11 +822,29 @@
 
     bindDockPad(movePadEl, moveKnobEl, "move");
     bindDockPad(aimPadEl, aimKnobEl, "aim");
-    bindDockButton(dockFireEl, () => { mobileTouch.fireHeld = true; }, () => { mobileTouch.fireHeld = false; });
-    bindDockButton(dockMissileEl, () => { fireMissile(); });
-    bindDockButton(dockDashEl, () => { dashQ = true; });
-    bindDockButton(dockJumpEl, () => { jumpQ = true; });
-    bindDockButton(dockPauseEl, () => { gamePaused ? closePauseMenu() : openPauseMenu(); });
+    bindDockButton(dockFireEl, () => {
+      if (!startTouchGameplayIfNeeded()) return;
+      mobileTouch.fireHeld = true;
+    }, () => { mobileTouch.fireHeld = false; });
+    bindDockButton(dockMissileEl, () => {
+      if (!startTouchGameplayIfNeeded()) return;
+      fireMissile();
+    });
+    bindDockButton(dockDashEl, () => {
+      if (!startTouchGameplayIfNeeded()) return;
+      dashQ = true;
+    });
+    bindDockButton(dockJumpEl, () => {
+      if (!startTouchGameplayIfNeeded()) return;
+      jumpQ = true;
+    });
+    bindDockButton(dockPauseEl, () => {
+      if (!gameStarted) {
+        startGame();
+        return;
+      }
+      gamePaused ? closePauseMenu() : openPauseMenu();
+    });
     bindDockButton(dockFullEl, () => { requestMobileFullscreen(); });
     const armCannonImg = new Image();
       armCannonImg.src = "assets/images/arm_cannon_blue.png";
