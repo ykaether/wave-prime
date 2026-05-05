@@ -1007,7 +1007,16 @@
           mobileTouch.aimStickId = touch.identifier;
           updateAimJoystick(mobileTouch.aimBaseX + pseudoX, mobileTouch.aimBaseY + pseudoY);
           if (prevX !== null && prevY !== null) {
-            updateTouchAim(touch.clientX - prevX, touch.clientY - prevY);
+            const canvasRect = canvas.getBoundingClientRect();
+            const scaleX = canvasRect.width ? WIDTH / canvasRect.width : 1;
+            const scaleY = canvasRect.height ? HEIGHT / canvasRect.height : 1;
+
+            // Match portrait dock aim movement to the same virtual canvas-space
+            // delta used by landscape fullscreen touch aim.
+            updateTouchAim(
+              (touch.clientX - prevX) * scaleX,
+              (touch.clientY - prevY) * scaleY
+            );
           }
           mobileTouch.aimLastClientX = touch.clientX;
           mobileTouch.aimLastClientY = touch.clientY;
