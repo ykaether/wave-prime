@@ -50,15 +50,18 @@
 
       const viewportW = window.visualViewport?.width || window.innerWidth;
       const viewportH = window.visualViewport?.height || window.innerHeight;
+      const viewportOffsetLeft = window.visualViewport?.offsetLeft || 0;
+      const viewportOffsetTop = window.visualViewport?.offsetTop || 0;
       const safeScale = 0.96;
       const scale = Math.min(viewportW / WIDTH, viewportH / HEIGHT) * safeScale;
 
       canvas.style.position = "fixed";
-      canvas.style.left = "50%";
-      canvas.style.top = "50%";
+      canvas.style.left = `${viewportOffsetLeft + viewportW / 2}px`;
+      canvas.style.top = `${viewportOffsetTop + viewportH / 2}px`;
       canvas.style.width = `${WIDTH * scale}px`;
       canvas.style.height = `${HEIGHT * scale}px`;
       canvas.style.transform = "translate(-50%, -50%)";
+      canvas.style.transformOrigin = "center center";
       canvas.style.margin = "0";
       canvas.style.display = "block";
       canvas.style.touchAction = "none";
@@ -178,29 +181,33 @@
         mobileTouch.aimRadius = stickR * 0.85;
       
         // 右半分：ボタン
-        mobileTouch.fireButton = {
+        Object.assign(mobileTouch.fireButton, {
           x: WIDTH * 0.88,
           y: panelTop + panelH * 0.36,
-          r: buttonR
-        };
-      
-        mobileTouch.missileButton = {
+          r: buttonR,
+          label: "FIRE",
+        });
+
+        Object.assign(mobileTouch.missileButton, {
           x: WIDTH * 0.78,
           y: panelTop + panelH * 0.22,
-          r: buttonR
-        };
-      
-        mobileTouch.dashButton = {
+          r: buttonR,
+          label: "MIS",
+        });
+
+        Object.assign(mobileTouch.dashButton, {
           x: WIDTH * 0.78,
           y: panelTop + panelH * 0.72,
-          r: buttonR
-        };
-      
-        mobileTouch.jumpButton = {
+          r: buttonR,
+          label: "DSH",
+        });
+
+        Object.assign(mobileTouch.jumpButton, {
           x: WIDTH * 0.90,
           y: panelTop + panelH * 0.62,
-          r: buttonR
-        };
+          r: buttonR,
+          label: "JMP",
+        });
       
         return;
       }
@@ -221,17 +228,23 @@
 
       mobileTouch.fireButton.x = mobileTouch.aimBaseX + ringOffset;
       mobileTouch.fireButton.y = mobileTouch.aimBaseY - ringOffset;
+      mobileTouch.fireButton.label = "FIRE";
 
       mobileTouch.pauseButton.x = WIDTH - 48;
       mobileTouch.pauseButton.y = 48;
+      mobileTouch.pauseButton.label = "II";
       mobileTouch.fullscreenButton.x = WIDTH * 0.92;
       mobileTouch.fullscreenButton.y = HEIGHT * 0.88;
+      mobileTouch.fullscreenButton.label = "FULL";
       mobileTouch.missileButton.x = mobileTouch.aimBaseX - ringOffset;
       mobileTouch.missileButton.y = mobileTouch.aimBaseY - ringOffset;
+      mobileTouch.missileButton.label = "MIS";
       mobileTouch.dashButton.x = mobileTouch.aimBaseX - ringOffset;
       mobileTouch.dashButton.y = mobileTouch.aimBaseY + ringOffset;
+      mobileTouch.dashButton.label = "DSH";
       mobileTouch.jumpButton.x = mobileTouch.aimBaseX + ringOffset;
       mobileTouch.jumpButton.y = mobileTouch.aimBaseY + ringOffset;
+      mobileTouch.jumpButton.label = "JMP";
 
       if (!mobileTouch.aimStickId) {
         mobileTouch.aimKnobX = mobileTouch.aimBaseX;
