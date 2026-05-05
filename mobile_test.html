@@ -226,26 +226,53 @@
       setTimeout(() => window.scrollTo(0, 1), 420);
     }
 
+      function isMobileFullscreenActive() {
+        return !!(document.fullscreenElement || document.webkitFullscreenElement || document.msFullscreenElement);
+      }
+
+      function getMobileFullscreenLabel() {
+        return isMobileFullscreenActive() ? "MIN" : "FULL";
+      }
+
+      function syncMobileFullscreenLabel() {
+        const label = getMobileFullscreenLabel();
+        mobileTouch.fullscreenButton.label = label;
+        if (dockFullEl) dockFullEl.textContent = label;
+      }
+
       async function requestMobileFullscreen() {
         const target = document.documentElement;
       
         try {
-          if (!document.fullscreenElement) {
-            const request =
-              target.requestFullscreen ||
-              target.webkitRequestFullscreen ||
-              target.msRequestFullscreen;
+          if (isMobileFullscreenActive()) {
+            const exit =
+              document.exitFullscreen ||
+              document.webkitExitFullscreen ||
+              document.msExitFullscreen;
       
-            if (request) {
-              await request.call(target);
+            if (exit) {
+              await exit.call(document);
             }
+            syncMobileFullscreenLabel();
+            return;
+          }
+
+          const request =
+            target.requestFullscreen ||
+            target.webkitRequestFullscreen ||
+            target.msRequestFullscreen;
+      
+          if (request) {
+            await request.call(target);
           }
         } catch (err) {
-          console.warn("Fullscreen request failed:", err);
+          console.warn("Fullscreen toggle failed:", err);
         }
       
+        syncMobileFullscreenLabel();
+
         try {
-          if (screen.orientation && screen.orientation.lock) {
+          if (isMobileFullscreenActive() && screen.orientation && screen.orientation.lock) {
             await screen.orientation.lock(isPortraitStackedMode() ? "portrait" : "landscape");
           }
         } catch (_) {
@@ -253,8 +280,14 @@
         }
       }
 
+      document.addEventListener("fullscreenchange", syncMobileFullscreenLabel);
+      document.addEventListener("webkitfullscreenchange", syncMobileFullscreenLabel);
+
 
     const TOUCH_CONTROLS_ENABLED = true;
+    const MOBILE_MOVE_MULT = 1.5;
+    const MOBILE_AIM_SENSITIVITY_MULT = 0.65;
+    const MOBILE_AIM_PITCH_LIMIT_MULT = 0.5;
 
     const mobileTouch = {
       joystickId: null,
@@ -324,7 +357,7 @@
       mobileTouch.pauseButton.label = "II";
       mobileTouch.fullscreenButton.x = WIDTH * 0.92;
       mobileTouch.fullscreenButton.y = HEIGHT * 0.88;
-      mobileTouch.fullscreenButton.label = "FULL";
+      mobileTouch.fullscreenButton.label = getMobileFullscreenLabel();
       mobileTouch.missileButton.x = mobileTouch.aimBaseX - ringOffset;
       mobileTouch.missileButton.y = mobileTouch.aimBaseY - ringOffset;
       mobileTouch.missileButton.label = "MIS";
@@ -414,7 +447,7 @@
       mobileTouch.dashButton.label = "DSH";
       mobileTouch.jumpButton.label = "JMP";
       mobileTouch.pauseButton.label = "II";
-      mobileTouch.fullscreenButton.label = "FULL";
+      mobileTouch.fullscreenButton.label = getMobileFullscreenLabel();
     }
 
     function pointInCircle(px, py, cx, cy, r) {
@@ -450,6 +483,7 @@
       keys["KeyA"] = false;
       keys["KeyS"] = false;
       keys["KeyD"] = false;
+      keys._touchMoveActive = false;
     }
 
     function updateAimJoystick(px, py) {
@@ -489,8 +523,8 @@
       if (!hasActiveTouchId(mobileTouch.aimStickId)) return;
 
       const deadzone = 0.08;
-      const turnSensitivity = 0.040;
-      const pitchSensitivity = 0.024;
+      const turnSensitivity = 0.040 * MOBILE_AIM_SENSITIVITY_MULT;
+      const pitchSensitivity = 0.024 * MOBILE_AIM_SENSITIVITY_MULT;
       const rawX = mobileTouch.aimAxisX;
       const rawY = mobileTouch.aimAxisY;
       const mag = Math.hypot(rawX, rawY);
@@ -507,7 +541,7 @@
 
       if ("pitch" in player) {
         player.pitch -= aimY * pitchSensitivity;
-        player.pitch = Math.max(-MAX_PITCH, Math.min(MAX_PITCH, player.pitch));
+        player.pitch = Math.max(-MAX_PITCH * MOBILE_AIM_PITCH_LIMIT_MULT, Math.min(MAX_PITCH * MOBILE_AIM_PITCH_LIMIT_MULT, player.pitch));
       }
     }
     function updateTouchJoystick(px, py) {
@@ -530,6 +564,9 @@
       const threshold = 0.22;
       const inputX = dx / maxR;
       const inputY = dy / maxR;
+
+      const touchMoveActive = Math.abs(inputX) > threshold || Math.abs(inputY) > threshold;
+      keys._touchMoveActive = touchMoveActive;
 
       if (inputY < -threshold) keys["KeyW"] = true;
       if (inputY > threshold) keys["KeyS"] = true;
@@ -593,9 +630,9 @@
     
       // Horizontal aim should turn much more per swipe.
       // Vertical aim stays calmer to avoid mobile camera instability.
-      const yawSensitivity = 0.0085;
-      const pitchSensitivity = 0.00115;
-      const pitchLimit = 0.4;
+      const yawSensitivity = 0.0085 * MOBILE_AIM_SENSITIVITY_MULT;
+      const pitchSensitivity = 0.00115 * MOBILE_AIM_SENSITIVITY_MULT;
+      const pitchLimit = MAX_PITCH * MOBILE_AIM_PITCH_LIMIT_MULT;
     
       if (Math.abs(dx) < 1.2) dx = 0;
       if (Math.abs(dy) < 1.2) dy = 0;
@@ -999,6 +1036,7 @@
       }, { passive: false });
     }
 
+    syncMobileFullscreenLabel();
     bindPortraitPad(movePadEl, moveKnobEl, "move");
     bindPortraitPad(aimPadEl, aimKnobEl, "aim");
     bindPortraitButton(dockFireEl, () => {
@@ -2575,8 +2613,10 @@
       if (pillarDebugMessage.timer > 0) pillarDebugMessage.timer--;
       if (shotHitMarker && shotHitMarker.timer > 0) shotHitMarker.timer--;
       const lockActive = lockHeld || mouseLockHeld || !!keys.KeyC;
-      const moveMult = (keys.ShiftLeft || keys.ShiftRight || dashHeld) ? DASH_MULT : 1;
-      if (moveMult > 1) player.dashGlow = 6;
+      const dashMoveMult = (keys.ShiftLeft || keys.ShiftRight || dashHeld) ? DASH_MULT : 1;
+      const mobileMoveMult = keys._touchMoveActive ? MOBILE_MOVE_MULT : 1;
+      const moveMult = dashMoveMult * mobileMoveMult;
+      if (dashMoveMult > 1) player.dashGlow = 6;
 
       const lockInfo = getLockCandidate();
       player.lockTarget = lockActive ? lockInfo?.enemy || null : null;
