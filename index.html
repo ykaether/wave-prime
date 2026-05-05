@@ -33,7 +33,7 @@
 </head>
 <body>
   <canvas id="game" width="1280" height="720"></canvas>
-  <div id="hud">PC: WASD move · Mouse look · Left Click shoot/charge · Right Click lock-on · Space jump · Shift dash · R missile · 1/2 weapon · V visor · Esc/P pause · Pro Controller supported</div>
+  <div id="hud">PC: WASD move · Mouse look · Left Click shoot/charge · Right Click lock-on · Space jump · Shift sprint · F dash · R missile · 1/2 weapon · V visor · Esc/P pause · Pro Controller supported</div>
 
   <script>
     const canvas = document.getElementById('game');
@@ -61,10 +61,10 @@
     const HALF_FOV = FOV / 2;
     const RAYS = 80;
     const MAX_DEPTH = 18;
-    const MOVE_SPEED = 0.070;      // FPS-like base walk speed: faster normal movement
-    const STRAFE_SPEED = 0.066;    // FPS-like strafe speed: close to forward speed
+    const MOVE_SPEED = 0.090;      // Apex-like combat jog speed: much snappier than the previous safe tune
+    const STRAFE_SPEED = 0.085;    // FPS-like strafe speed: close to forward speed for active strafing
     const TURN_SPEED = 0.017;
-    const DASH_MULT = 1.75;        // keep sprint/dash from becoming too extreme after walk-speed boost
+    const SPRINT_MULT = 1.45;      // hold Shift / sprint input for Apex-like run speed
     const AIM_PITCH_SPEED = 0.014;
     const MAX_PITCH = 0.42;
     const MOUSE_SENS_X = 0.0025;
@@ -156,9 +156,9 @@
     const ENEMY_3D_SPREAD_DAMAGE = 9;
     const ENEMY_DEATH_TIME = 45;
     const ENEMY_DEATH_BLINKS = 5;
-    const DASH_BURST_SPD = 0.28;      // units per frame during burst
-    const DASH_DURATION  = 20;         // frames of dash movement
-    const DASH_COOLDOWN  = 10;        // frames before next dash
+    const DASH_BURST_SPD = 0.34;      // shorter, punchier burst dash
+    const DASH_DURATION  = 12;         // shorter dash so sprint remains the main movement tool
+    const DASH_COOLDOWN  = 18;        // slightly longer cooldown to avoid dash spam after speed boost
     const KNOCKBACK_SPD   = 0.36;
     const KNOCKBACK_DECAY = 0.76;
     const ENEMY_MELEE_RANGE  = 1.3;
@@ -539,7 +539,7 @@
       if (!keys[e.code] && ['KeyX', 'KeyY'].includes(e.code)) shootQ = true;
       if (e.code === 'KeyR' && !e.repeat) fireMissile();
       if (!keys[e.code] && e.code === 'Space') jumpQ = true;
-      if (!keys[e.code] && (e.code === 'KeyF' || e.code === 'ShiftLeft' || e.code === 'ShiftRight')) dashQ = true;
+      if (!keys[e.code] && e.code === 'KeyF') dashQ = true;
       if (!keys[e.code] && e.code === 'KeyL') showDebugLabels = !showDebugLabels;
       if (!keys[e.code] && e.code === 'KeyH') showHeightGuides = !showHeightGuides;
       if (!keys[e.code] && e.code === 'KeyG') showCoordinateGrid = !showCoordinateGrid;
@@ -1570,7 +1570,7 @@
       if (pillarDebugMessage.timer > 0) pillarDebugMessage.timer--;
       if (shotHitMarker && shotHitMarker.timer > 0) shotHitMarker.timer--;
       const lockActive = lockHeld || mouseLockHeld || !!keys.KeyC;
-      const moveMult = (keys.ShiftLeft || keys.ShiftRight || dashHeld) ? DASH_MULT : 1;
+      const moveMult = (keys.ShiftLeft || keys.ShiftRight || dashHeld) ? SPRINT_MULT : 1;
       if (moveMult > 1) player.dashGlow = 6;
 
       const lockInfo = getLockCandidate();
@@ -1602,8 +1602,8 @@
       let strafe = 0;
       if (keys.KeyW || keys.ArrowUp || keys._forward) step += MOVE_SPEED * moveMult;
       if (keys.KeyS || keys.ArrowDown || keys._back) step -= MOVE_SPEED * moveMult;
-      // lock-on sidestep: lighter FPS-style strafe assist when locked on
-      const sidestepMult = player.lockTarget ? 1.35 : 1;
+      // lock-on sidestep: keep light assist, but avoid unnatural 2.5x strafing
+      const sidestepMult = player.lockTarget ? 1.25 : 1;
       if (keys.KeyA) { strafe += STRAFE_SPEED * moveMult * sidestepMult; if (player.lockTarget) player.dashGlow = 10; }
       if (keys.KeyD) { strafe -= STRAFE_SPEED * moveMult * sidestepMult; if (player.lockTarget) player.dashGlow = 10; }
       if (keys._left) { strafe -= STRAFE_SPEED * moveMult * sidestepMult; if (player.lockTarget) player.dashGlow = 10; }
@@ -4665,7 +4665,7 @@ ctx.fillRect(minX, minY, w, h);
       ctx.fillText(`Player Start Cell: ${playerStartCell}`, 18, 310);
       ctx.fillText(`Player Cell: ${playerCellLabel} (${playerCellIndices.cellX},${playerCellIndices.cellY})`, 18, 326);
       ctx.fillText(`Player Position: ${playerCoord}`, 18, 342);
-      ctx.fillText(`Player Speed: move ${MOVE_SPEED.toFixed(3)} / strafe ${STRAFE_SPEED.toFixed(3)}`, 18, 358);
+      ctx.fillText(`Player Speed: move ${MOVE_SPEED.toFixed(3)} / strafe ${STRAFE_SPEED.toFixed(3)} / sprint x${SPRINT_MULT.toFixed(2)}`, 18, 358);
       ctx.fillText(`Pillar_A Height: ${currentPillarA ? currentPillarA.h.toFixed(2) : 'none'} | Pillar_B Height: ${pillarB ? pillarB.h.toFixed(2) : 'none'}`, 18, 374);
       ctx.fillText(`Target Cell: ${targetCellLabel}`, 18, 390);
       ctx.fillText(`Target Position: ${targetCoord}`, 18, 406);
