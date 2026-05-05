@@ -47,11 +47,11 @@
       bottom: 0;
       display: none;
       z-index: 30;
-      background:
-        linear-gradient(180deg, rgba(2, 8, 18, 0.08) 0%, rgba(4, 10, 18, 0.68) 24%, rgba(3, 8, 16, 0.96) 100%);
-      border-top: 1px solid rgba(66, 236, 255, 0.16);
-      backdrop-filter: blur(6px);
       overflow: hidden;
+      background:
+        linear-gradient(180deg, rgba(3,10,18,0.06) 0%, rgba(4,10,18,0.62) 24%, rgba(3,8,16,0.96) 100%);
+      border-top: 1px solid rgba(66,236,255,0.16);
+      backdrop-filter: blur(6px);
       touch-action: none;
       user-select: none;
       -webkit-user-select: none;
@@ -60,22 +60,16 @@
     #mobileDock.visible { display: block; }
     .dock-pad {
       position: absolute;
-      width: 152px;
-      height: 152px;
       border-radius: 50%;
-      border: 2px solid rgba(66, 236, 255, 0.38);
-      background: radial-gradient(circle, rgba(66,236,255,0.10) 0%, rgba(10,18,28,0.34) 58%, rgba(5,10,18,0.68) 100%);
-      box-shadow: 0 0 18px rgba(66,236,255,0.18);
+      border: 2px solid rgba(66,236,255,0.42);
+      background: radial-gradient(circle, rgba(66,236,255,0.08) 0%, rgba(11,18,28,0.3) 55%, rgba(5,10,18,0.58) 100%);
+      box-shadow: 0 0 16px rgba(66,236,255,0.18);
       touch-action: none;
     }
     .dock-knob {
       position: absolute;
-      width: 56px;
-      height: 56px;
-      left: 48px;
-      top: 48px;
       border-radius: 50%;
-      background: radial-gradient(circle, rgba(255,255,255,0.9) 0%, rgba(120,255,248,0.88) 58%, rgba(42,120,150,0.96) 100%);
+      background: radial-gradient(circle, rgba(255,255,255,0.9) 0%, rgba(120,255,248,0.85) 56%, rgba(42,120,150,0.95) 100%);
       box-shadow: 0 0 16px rgba(150,255,255,0.42);
       pointer-events: none;
       transform: translate(0px, 0px);
@@ -83,26 +77,24 @@
     .dock-pad-label {
       position: absolute;
       width: 100%;
-      top: -28px;
       text-align: center;
-      color: rgba(180, 248, 255, 0.9);
+      top: -28px;
+      color: rgba(180,248,255,0.9);
       font-size: 12px;
       letter-spacing: 1px;
       pointer-events: none;
     }
     .dock-btn {
       position: absolute;
-      width: 74px;
-      height: 74px;
       border-radius: 50%;
-      border: 2px solid rgba(66, 236, 255, 0.34);
-      background: radial-gradient(circle, rgba(52,84,130,0.82) 0%, rgba(10,16,26,0.96) 72%);
-      color: #d7fffb;
+      border: 2px solid rgba(66,236,255,0.36);
+      background: radial-gradient(circle, rgba(52,84,130,0.8) 0%, rgba(10,16,26,0.94) 72%);
+      color: #cffffa;
       font: 700 14px/1 monospace;
+      box-shadow: 0 0 14px rgba(66,236,255,0.16);
       display: flex;
       align-items: center;
       justify-content: center;
-      box-shadow: 0 0 14px rgba(66,236,255,0.16);
       touch-action: none;
       user-select: none;
       -webkit-user-select: none;
@@ -152,6 +144,14 @@
     // Adds: left joystick, right-side aim swipe, FIRE button, PAUSE button.
     // Designed to reuse existing keyboard/game logic as much as possible.
 
+    function isTouchDevice() {
+      return ("ontouchstart" in window) || navigator.maxTouchPoints > 0;
+    }
+
+    function isPortraitStackedMode() {
+      return isTouchDevice() && window.innerHeight > window.innerWidth;
+    }
+
     function fitCanvasToViewport() {
       if (typeof canvas === "undefined") return;
 
@@ -159,22 +159,18 @@
       const viewportH = window.visualViewport?.height || window.innerHeight;
       const viewportOffsetLeft = window.visualViewport?.offsetLeft || 0;
       const viewportOffsetTop = window.visualViewport?.offsetTop || 0;
-      const portraitDockMode = isPortraitDockMode();
-      const dockHeight = portraitDockMode
-        ? Math.max(280, Math.min(420, Math.round(viewportH * 0.46)))
-        : 0;
-      const topAreaH = portraitDockMode
-        ? Math.max(220, viewportH - dockHeight - 10)
-        : viewportH;
-      const safeScale = portraitDockMode ? 0.985 : 0.96;
+      const portraitStacked = isPortraitStackedMode();
+      const dockHeight = portraitStacked ? Math.round(viewportH * 0.5) : 0;
+      const topAreaH = portraitStacked ? (viewportH - dockHeight) : viewportH;
+      const safeScale = portraitStacked ? 0.985 : 0.96;
       const scale = Math.min(viewportW / WIDTH, topAreaH / HEIGHT) * safeScale;
-      const canvasCenterY = portraitDockMode
+      const centerY = portraitStacked
         ? viewportOffsetTop + topAreaH / 2
         : viewportOffsetTop + viewportH / 2;
 
       canvas.style.position = "fixed";
       canvas.style.left = `${viewportOffsetLeft + viewportW / 2}px`;
-      canvas.style.top = `${canvasCenterY}px`;
+      canvas.style.top = `${centerY}px`;
       canvas.style.width = `${WIDTH * scale}px`;
       canvas.style.height = `${HEIGHT * scale}px`;
       canvas.style.transform = "translate(-50%, -50%)";
@@ -183,7 +179,7 @@
       canvas.style.display = "block";
       canvas.style.touchAction = "none";
       canvas.style.maxWidth = "96vw";
-      canvas.style.maxHeight = portraitDockMode ? `${topAreaH}px` : "96vh";
+      canvas.style.maxHeight = portraitStacked ? `${topAreaH}px` : "96vh";
 
       document.documentElement.style.margin = "0";
       document.documentElement.style.padding = "0";
@@ -199,12 +195,12 @@
       document.body.style.background = "#000";
       document.body.style.touchAction = "none";
       if (mobileDock) {
-        mobileDock.classList.toggle("visible", portraitDockMode);
-        if (portraitDockMode) {
-          mobileDock.style.top = `${viewportOffsetTop + topAreaH + 10}px`;
+        mobileDock.classList.toggle("visible", portraitStacked);
+        if (portraitStacked) {
+          mobileDock.style.top = `${viewportOffsetTop + topAreaH}px`;
           mobileDock.style.height = `${dockHeight}px`;
           mobileDock.style.bottom = "auto";
-          layoutPortraitDock();
+          layoutPortraitDockFromLandscape();
         } else {
           mobileDock.style.top = "";
           mobileDock.style.height = "";
@@ -246,7 +242,7 @@
       
         try {
           if (screen.orientation && screen.orientation.lock) {
-            await screen.orientation.lock(isPortraitDockMode() ? "portrait" : "landscape");
+            await screen.orientation.lock(isPortraitStackedMode() ? "portrait" : "landscape");
           }
         } catch (_) {
           // Some mobile browsers block orientation lock. Ignore safely.
@@ -255,14 +251,6 @@
 
 
     const TOUCH_CONTROLS_ENABLED = true;
-
-    function isTouchDevice() {
-      return TOUCH_CONTROLS_ENABLED && (("ontouchstart" in window) || navigator.maxTouchPoints > 0);
-    }
-
-    function isPortraitDockMode() {
-      return isTouchDevice() && (window.innerHeight > window.innerWidth);
-    }
 
     const mobileTouch = {
       joystickId: null,
@@ -301,57 +289,11 @@
     }
 
     function layoutTouchControls() {
-      const isPortrait = window.innerHeight > window.innerWidth;
+      const isPortrait = isPortraitStackedMode();
       mobileTouch.isPortrait = isPortrait;
       
       if (isPortrait) {
-        const panelTop = HEIGHT * 0.68;
-        const panelH = HEIGHT - panelTop;
-      
-        mobileTouch.controlPanelTop = panelTop;
-      
-        const stickR = Math.min(WIDTH * 0.16, panelH * 0.32, 70);
-        const buttonR = Math.min(WIDTH * 0.07, panelH * 0.16, 34);
-      
-        // 左半分：移動カーソル
-        mobileTouch.joystickBaseX = WIDTH * 0.25;
-        mobileTouch.joystickBaseY = panelTop + panelH * 0.55;
-        mobileTouch.joystickRadius = stickR;
-      
-        // 右半分：AIMカーソル
-        mobileTouch.aimBaseX = WIDTH * 0.68;
-        mobileTouch.aimBaseY = panelTop + panelH * 0.48;
-        mobileTouch.aimRadius = stickR * 0.85;
-      
-        // 右半分：ボタン
-        Object.assign(mobileTouch.fireButton, {
-          x: WIDTH * 0.88,
-          y: panelTop + panelH * 0.36,
-          r: buttonR,
-          label: "FIRE",
-        });
-
-        Object.assign(mobileTouch.missileButton, {
-          x: WIDTH * 0.78,
-          y: panelTop + panelH * 0.22,
-          r: buttonR,
-          label: "MIS",
-        });
-
-        Object.assign(mobileTouch.dashButton, {
-          x: WIDTH * 0.78,
-          y: panelTop + panelH * 0.72,
-          r: buttonR,
-          label: "DSH",
-        });
-
-        Object.assign(mobileTouch.jumpButton, {
-          x: WIDTH * 0.90,
-          y: panelTop + panelH * 0.62,
-          r: buttonR,
-          label: "JMP",
-        });
-      
+        layoutPortraitDockFromLandscape();
         return;
       }
       const stickInsetX = WIDTH * 0.18;
@@ -395,62 +337,71 @@
       }
     }
 
-    function layoutPortraitDock() {
-      if (!mobileDock || !isPortraitDockMode()) return;
-      const dockRect = mobileDock.getBoundingClientRect();
-      const panelW = dockRect.width || window.innerWidth;
-      const panelH = dockRect.height || Math.max(280, Math.round(window.innerHeight * 0.46));
-      const centerY = panelH * 0.56;
-      const padSize = Math.min(164, Math.max(138, panelW * 0.30));
-      const padBottom = Math.max(18, panelH * 0.10);
-      const ringOffset = Math.min(94, Math.max(72, panelW * 0.11));
+    function setDockElementBox(el, cx, cy, size) {
+      if (!el) return;
+      el.style.width = `${size}px`;
+      el.style.height = `${size}px`;
+      el.style.left = `${cx - size / 2}px`;
+      el.style.top = `${cy - size / 2}px`;
+    }
 
-      if (movePadEl) {
-        movePadEl.style.width = `${padSize}px`;
-        movePadEl.style.height = `${padSize}px`;
-        movePadEl.style.left = `${Math.max(20, panelW * 0.09)}px`;
-        movePadEl.style.bottom = `${padBottom}px`;
+    function layoutPortraitDockFromLandscape() {
+      if (!mobileDock || !isPortraitStackedMode()) return;
+      const rect = mobileDock.getBoundingClientRect();
+      const panelW = rect.width || window.innerWidth;
+      const panelH = rect.height || Math.round(window.innerHeight * 0.5);
+      const virtualScale = Math.min(panelW / WIDTH, panelH / HEIGHT) * 0.94;
+      const virtualW = WIDTH * virtualScale;
+      const virtualH = HEIGHT * virtualScale;
+      const offsetX = (panelW - virtualW) / 2;
+      const offsetY = (panelH - virtualH) / 2;
+      const mapX = x => offsetX + x * virtualScale;
+      const mapY = y => offsetY + y * virtualScale;
+      const padSize = mobileTouch.joyRadius * 2 * virtualScale;
+      const aimSize = mobileTouch.aimRadius * 2 * virtualScale;
+      const knobSize = 56 * virtualScale;
+      const buttonFireSize = mobileTouch.fireButton.r * 2 * virtualScale;
+      const buttonSize = mobileTouch.missileButton.r * 2 * virtualScale;
+
+      const joyX = mapX(WIDTH * 0.18);
+      const joyY = mapY(HEIGHT * 0.5);
+      const aimX = mapX(WIDTH - WIDTH * 0.18);
+      const aimY = mapY(HEIGHT * 0.5);
+      const ringOffset = 116;
+
+      mobileTouch.joyBaseX = WIDTH * 0.18;
+      mobileTouch.joyBaseY = HEIGHT * 0.5;
+      mobileTouch.aimBaseX = WIDTH - WIDTH * 0.18;
+      mobileTouch.aimBaseY = HEIGHT * 0.5;
+
+      setDockElementBox(movePadEl, joyX, joyY, padSize);
+      setDockElementBox(aimPadEl, aimX, aimY, aimSize);
+      setDockElementBox(dockFireEl, mapX(mobileTouch.aimBaseX + ringOffset), mapY(mobileTouch.aimBaseY - ringOffset), buttonFireSize);
+      setDockElementBox(dockMissileEl, mapX(mobileTouch.aimBaseX - ringOffset), mapY(mobileTouch.aimBaseY - ringOffset), buttonSize);
+      setDockElementBox(dockDashEl, mapX(mobileTouch.aimBaseX - ringOffset), mapY(mobileTouch.aimBaseY + ringOffset), buttonSize);
+      setDockElementBox(dockJumpEl, mapX(mobileTouch.aimBaseX + ringOffset), mapY(mobileTouch.aimBaseY + ringOffset), buttonSize);
+      setDockElementBox(dockPauseEl, mapX(WIDTH - 48), mapY(48), buttonSize);
+      setDockElementBox(dockFullEl, mapX(WIDTH * 0.92), mapY(HEIGHT * 0.88), buttonSize);
+
+      if (moveKnobEl) {
+        moveKnobEl.style.width = `${knobSize}px`;
+        moveKnobEl.style.height = `${knobSize}px`;
+        moveKnobEl.style.left = `${(padSize - knobSize) / 2}px`;
+        moveKnobEl.style.top = `${(padSize - knobSize) / 2}px`;
       }
-      if (aimPadEl) {
-        aimPadEl.style.width = `${padSize}px`;
-        aimPadEl.style.height = `${padSize}px`;
-        aimPadEl.style.right = `${Math.max(20, panelW * 0.09)}px`;
-        aimPadEl.style.bottom = `${padBottom}px`;
+      if (aimKnobEl) {
+        aimKnobEl.style.width = `${knobSize}px`;
+        aimKnobEl.style.height = `${knobSize}px`;
+        aimKnobEl.style.left = `${(aimSize - knobSize) / 2}px`;
+        aimKnobEl.style.top = `${(aimSize - knobSize) / 2}px`;
       }
 
-      const aimCenterX = panelW - Math.max(20, panelW * 0.09) - padSize / 2;
-      const buttonXRight = aimCenterX + ringOffset;
-      const buttonXLeft = aimCenterX - ringOffset;
-      const buttonYTop = centerY - ringOffset;
-      const buttonYBottom = centerY + ringOffset;
-      const pauseX = panelW * 0.47;
-      const fullX = panelW * 0.59;
-      const midY = centerY + ringOffset * 0.42;
-
-      if (dockMissileEl) {
-        dockMissileEl.style.left = `${buttonXLeft - 37}px`;
-        dockMissileEl.style.top = `${buttonYTop - 37}px`;
-      }
-      if (dockFireEl) {
-        dockFireEl.style.left = `${buttonXRight - 37}px`;
-        dockFireEl.style.top = `${buttonYTop - 37}px`;
-      }
-      if (dockDashEl) {
-        dockDashEl.style.left = `${buttonXLeft - 37}px`;
-        dockDashEl.style.top = `${buttonYBottom - 37}px`;
-      }
-      if (dockJumpEl) {
-        dockJumpEl.style.left = `${buttonXRight - 37}px`;
-        dockJumpEl.style.top = `${buttonYBottom - 37}px`;
-      }
-      if (dockPauseEl) {
-        dockPauseEl.style.left = `${pauseX - 32}px`;
-        dockPauseEl.style.top = `${midY - 32}px`;
-      }
-      if (dockFullEl) {
-        dockFullEl.style.left = `${fullX - 32}px`;
-        dockFullEl.style.top = `${midY - 32}px`;
-      }
+      mobileTouch.fireButton.label = "FIRE";
+      mobileTouch.missileButton.label = "MIS";
+      mobileTouch.dashButton.label = "DSH";
+      mobileTouch.jumpButton.label = "JMP";
+      mobileTouch.pauseButton.label = "II";
+      mobileTouch.fullscreenButton.label = "FULL";
     }
 
     function pointInCircle(px, py, cx, cy, r) {
@@ -648,7 +599,7 @@
 
     function drawTouchControls() {
       if (!isTouchControlsVisible()) return;
-      if (isPortraitDockMode()) return;
+      if (isPortraitStackedMode()) return;
 
       layoutTouchControls();
 
@@ -723,7 +674,7 @@
     }
 
     function handleMobileTouchStart(id, clientX, clientY) {
-      if (isPortraitDockMode()) return false;
+      if (isPortraitStackedMode()) return false;
       const p = getCanvasTouchPos(clientX, clientY);
 
       if (gamePaused) {
@@ -804,7 +755,7 @@
     }
 
     function handleMobileTouchMove(id, clientX, clientY) {
-      if (isPortraitDockMode()) return false;
+      if (isPortraitStackedMode()) return false;
       if (!isTouchControlsVisible()) return false;
       const p = getCanvasTouchPos(clientX, clientY);
 
@@ -830,7 +781,7 @@
     }
 
     function handleMobileTouchEnd(id) {
-      if (isPortraitDockMode()) return false;
+      if (isPortraitStackedMode()) return false;
       let handled = false;
       if (id === mobileTouch.joystickId) {
         releaseTouchJoystick();
@@ -892,23 +843,20 @@
         const ny = dy / dist;
         setDockKnob(knobEl, nx * clamped, ny * clamped);
 
-        layoutTouchControls();
-        const baseX = type === "move" ? mobileTouch.joyBaseX : mobileTouch.aimBaseX;
-        const baseY = type === "move" ? mobileTouch.joyBaseY : mobileTouch.aimBaseY;
         const maxR = type === "move" ? mobileTouch.joyRadius : mobileTouch.aimRadius;
-        const pseudoX = baseX + (dx / radius) * maxR;
-        const pseudoY = baseY + (dy / radius) * maxR;
+        const pseudoX = (dx / radius) * maxR;
+        const pseudoY = (dy / radius) * maxR;
         if (type === "move") {
           mobileTouch.joystickId = touch.identifier;
-          updateTouchJoystick(pseudoX, pseudoY);
+          updateTouchJoystick(mobileTouch.joyBaseX + pseudoX, mobileTouch.joyBaseY + pseudoY);
         } else {
           mobileTouch.aimStickId = touch.identifier;
-          updateAimJoystick(pseudoX, pseudoY);
+          updateAimJoystick(mobileTouch.aimBaseX + pseudoX, mobileTouch.aimBaseY + pseudoY);
         }
       };
 
       padEl.addEventListener("touchstart", e => {
-        if (!isPortraitDockMode()) return;
+        if (!isPortraitStackedMode()) return;
         if (!startTouchGameplayIfNeeded()) {
           e.preventDefault();
           return;
@@ -921,7 +869,7 @@
       }, { passive: false });
 
       padEl.addEventListener("touchmove", e => {
-        if (!isPortraitDockMode()) return;
+        if (!isPortraitStackedMode()) return;
         for (const touch of e.changedTouches) {
           if (touch.identifier === activeTouchId) {
             applyTouch(touch);
@@ -940,7 +888,6 @@
           }
         }
       };
-
       padEl.addEventListener("touchend", endHandler, { passive: false });
       padEl.addEventListener("touchcancel", endHandler, { passive: false });
     }
@@ -949,7 +896,7 @@
       if (!el) return;
       let activeTouchId = null;
       el.addEventListener("touchstart", e => {
-        if (!isPortraitDockMode()) return;
+        if (!isPortraitStackedMode()) return;
         const touch = e.changedTouches[0];
         if (!touch) return;
         activeTouchId = touch.identifier;
