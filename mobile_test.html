@@ -104,6 +104,9 @@
       box-shadow: 0 0 22px rgba(120,255,255,0.34);
       border-color: rgba(120,255,255,0.72);
     }
+    #dockFull {
+      display: none !important;
+    }
   </style>
 </head>
 <body>
@@ -285,9 +288,9 @@
 
 
     const TOUCH_CONTROLS_ENABLED = true;
-    const MOBILE_MOVE_MULT = 1.5;
+    const MOBILE_MOVE_MULT = 2.25;
     const MOBILE_AIM_SENSITIVITY_MULT = 0.65;
-    const MOBILE_AIM_PITCH_LIMIT_MULT = 0.5;
+    const MOBILE_AIM_PITCH_LIMIT_MULT = 0.25;
 
     const mobileTouch = {
       joystickId: null,
@@ -1068,8 +1071,26 @@
         location.href.includes('/Projects/job_search/') || location.href.includes('/waveprime_workspace/')
           ? "file:///Users/yuikitagawa/Documents/metroidvania-prototype/game/ManualEdit/assets/images/arm_cannon_blue.png"
           : "assets/images/arm_cannon_blue.png";
+    function setImageSourceWithFallback(img, paths, label = "image") {
+      let index = 0;
+      img.onerror = () => {
+        if (index < paths.length) {
+          img.src = paths[index++];
+        } else {
+          console.warn(`${label} failed to load from all candidate paths.`);
+        }
+      };
+      img.src = paths[index++];
+    }
+
     const enemyGirlImg = new Image();
-      enemyGirlImg.src = "enemy_girl.png";
+    setImageSourceWithFallback(enemyGirlImg, [
+      "assets/images/enemy_girl.png",
+      "enemy_girl.png",
+      "images/enemy_girl.png",
+      "../assets/images/enemy_girl.png",
+      "../images/enemy_girl.png"
+    ], "enemy_girl.png");
     const armCannonSound = new Audio(
       location.href.includes('/Projects/job_search/') || location.href.includes('/waveprime_workspace/')
         ? 'file:///Users/yuikitagawa/Documents/metroidvania-prototype/game/ManualEdit/assets/sounds/arm_cannon_sound.ogg'
