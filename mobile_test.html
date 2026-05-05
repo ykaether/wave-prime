@@ -119,8 +119,8 @@
       opacity: 1;
     }
     #rotateHintCard {
-      min-width: 228px;
-      max-width: min(82vw, 320px);
+      min-width: 204px;
+      max-width: min(76vw, 290px);
       padding: 10px 14px 12px;
       border-radius: 14px;
       border: 1px solid rgba(255, 210, 120, 0.34);
@@ -226,7 +226,7 @@
 
     function updateRotateHintPosition(topAreaH, dockTop) {
       if (!rotateHintEl) return;
-      const hintTop = Math.max(12, Math.round(dockTop - 74));
+      const hintTop = Math.max(12, Math.round(dockTop - 96));
       rotateHintEl.style.top = `${hintTop}px`;
     }
 
@@ -472,35 +472,38 @@
       const panelW = rect.width || window.innerWidth;
       const panelH = rect.height || Math.round(window.innerHeight * 0.5);
 
-      const edgeInset = Math.max(12, panelW * 0.03);
-      const utilitySize = Math.min(72, Math.max(58, panelW * 0.16));
-      const padSize = Math.min(138, Math.max(108, panelW * 0.30));
+      // Portrait target:
+      // - Raise the whole control cluster upward.
+      // - Keep the entire right-side cluster cleanly inside the visible right area.
+      // - Prevent any buttons from clipping at the screen edge.
+      const edgeInset = Math.max(18, panelW * 0.045);
+      const utilitySize = Math.min(66, Math.max(54, panelW * 0.145));
+      const padSize = Math.min(126, Math.max(100, panelW * 0.27));
       const aimSize = padSize;
-      const knobSize = Math.round(52 * (padSize / 130));
-      const buttonSize = Math.min(66, Math.max(54, panelW * 0.15));
+      const knobSize = Math.round(50 * (padSize / 126));
+      const buttonSize = Math.min(58, Math.max(48, panelW * 0.125));
       const buttonFireSize = buttonSize;
       const buttonRadiusPx = buttonSize / 2;
       const aimRadiusPx = aimSize / 2;
 
-      // Shift the whole control cluster upward for easier tapping.
-      const utilityY = Math.max(utilitySize / 2 + 8, panelH * 0.10);
-      const centerY = panelH * 0.52;
+      const utilityY = Math.max(utilitySize / 2 + 6, panelH * 0.085);
+      const centerY = panelH * 0.40;
       const aimY = centerY + 8;
-      const joyY = centerY + 10;
+      const joyY = centerY + 12;
 
-      // Left-side move pad.
-      const joyX = edgeInset + padSize / 2 + 2;
-
-      // Right-side action cluster stays fully inside the right half.
-      const rightMinX = panelW * 0.5 + aimRadiusPx + buttonRadiusPx + 10;
-      const rightMaxX = panelW - edgeInset - aimRadiusPx - buttonRadiusPx - 4;
-      const targetAimX = panelW * 0.74;
-      const aimX = Math.max(rightMinX, Math.min(rightMaxX, targetAimX));
-
-      const ringOffsetX = aimRadiusPx + buttonRadiusPx - 10;
-      const ringOffsetY = aimRadiusPx + buttonRadiusPx - 10;
+      const ringOffsetX = aimRadiusPx + buttonRadiusPx - 12;
+      const ringOffsetY = aimRadiusPx + buttonRadiusPx - 12;
       const topButtonY = aimY - ringOffsetY;
       const bottomButtonY = aimY + ringOffsetY;
+
+      // Left-side move pad kept within left half.
+      const joyX = Math.max(edgeInset + padSize / 2, panelW * 0.22);
+
+      // Right-side cluster fully contained in the visible right half.
+      const minAimX = panelW * 0.5 + ringOffsetX + buttonRadiusPx + 10;
+      const maxAimX = panelW - edgeInset - ringOffsetX - buttonRadiusPx;
+      const targetAimX = panelW * 0.73;
+      const aimX = Math.max(minAimX, Math.min(maxAimX, targetAimX));
 
       mobileTouch.joyBaseX = WIDTH * 0.18;
       mobileTouch.joyBaseY = HEIGHT * 0.5;
