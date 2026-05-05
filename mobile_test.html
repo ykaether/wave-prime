@@ -356,19 +356,22 @@
 
       const joyX = leftHalfW * 0.34;
       const joyY = panelH * 0.56;
-      const aimX = rightHalfX + rightHalfW * 0.52;
-      const aimY = panelH * 0.54;
+      const aimX = rightHalfX + rightHalfW * 0.56;
+      const aimY = panelH * 0.60;
 
       const padSize = Math.min(170, Math.max(142, panelW * 0.24));
-      const aimSize = Math.min(156, Math.max(132, panelW * 0.22));
+      const aimSize = Math.min(140, Math.max(118, panelW * 0.19));
       const knobSize = Math.round(56 * (padSize / 148));
-      const buttonFireSize = Math.min(86, Math.max(74, panelW * 0.12));
-      const buttonSize = Math.min(78, Math.max(68, panelW * 0.105));
-      const ringOffsetX = Math.min(rightHalfW * 0.28, Math.max(82, rightHalfW * 0.22));
-      const ringOffsetY = Math.min(panelH * 0.24, Math.max(68, panelH * 0.19));
-      const utilityX = rightHalfX + rightHalfW * 0.14;
-      const utilityTopY = panelH * 0.34;
-      const utilityBottomY = panelH * 0.70;
+      const buttonFireSize = Math.min(86, Math.max(76, panelW * 0.118));
+      const buttonSize = Math.min(78, Math.max(68, panelW * 0.102));
+      const aimRadiusPx = aimSize / 2;
+      const fireRadiusPx = buttonFireSize / 2;
+      const buttonRadiusPx = buttonSize / 2;
+      const ringOffsetX = aimRadiusPx + buttonRadiusPx - 6;
+      const ringOffsetY = aimRadiusPx + buttonRadiusPx - 4;
+      const topButtonY = aimY - ringOffsetY;
+      const bottomButtonY = aimY + ringOffsetY;
+      const utilityY = Math.max(buttonSize * 0.65, topButtonY - buttonSize * 1.15);
 
       mobileTouch.joyBaseX = WIDTH * 0.18;
       mobileTouch.joyBaseY = HEIGHT * 0.5;
@@ -377,12 +380,12 @@
 
       setDockElementBox(movePadEl, joyX, joyY, padSize);
       setDockElementBox(aimPadEl, aimX, aimY, aimSize);
-      setDockElementBox(dockFireEl, aimX + ringOffsetX, aimY - ringOffsetY, buttonFireSize);
-      setDockElementBox(dockMissileEl, aimX - ringOffsetX, aimY - ringOffsetY, buttonSize);
-      setDockElementBox(dockDashEl, aimX - ringOffsetX, aimY + ringOffsetY, buttonSize);
-      setDockElementBox(dockJumpEl, aimX + ringOffsetX, aimY + ringOffsetY, buttonSize);
-      setDockElementBox(dockPauseEl, utilityX, utilityTopY, buttonSize);
-      setDockElementBox(dockFullEl, utilityX, utilityBottomY, buttonSize);
+      setDockElementBox(dockMissileEl, aimX - ringOffsetX, topButtonY, buttonSize);
+      setDockElementBox(dockFireEl, aimX + ringOffsetX, topButtonY, buttonFireSize);
+      setDockElementBox(dockDashEl, aimX - ringOffsetX, bottomButtonY, buttonSize);
+      setDockElementBox(dockJumpEl, aimX + ringOffsetX, bottomButtonY, buttonSize);
+      setDockElementBox(dockPauseEl, aimX - ringOffsetX, utilityY, buttonSize);
+      setDockElementBox(dockFullEl, aimX + ringOffsetX, utilityY, buttonSize);
 
       if (moveKnobEl) {
         moveKnobEl.style.width = `${knobSize}px`;
