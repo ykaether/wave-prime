@@ -6232,17 +6232,71 @@ ctx.fillRect(minX, minY, w, h);
     }
 
 
-    // ===== Samurai Panorama Water Reflection Patch v2.1 =====
+    // ===== Samurai Panorama + Floor Material Patch v3 =====
     // Correct insertion: this runs once at startup, immediately before the main loop starts.
     // It overrides drawBackground() and drawFloor() after both original functions already exist.
     (function applySamuraiPanoramaWaterPatch() {
       const panoramaImg = new Image();
       panoramaImg.decoding = "async";
       panoramaImg.loading = "eager";
-      panoramaImg.src = "./samurai_panorama_1024x512.png";
+      panoramaImg.src = "./samurai_panorama_seamless_v2.png";
       panoramaImg.onerror = () => {
         console.error("Samurai panorama failed to load:", panoramaImg.src);
       };
+
+      // Floor material replacement: this is the part that actually changes the floor.
+      // The previous version only added a weak tint over the old blue floor texture.
+      if (typeof floorTileImg !== "undefined") {
+        floorTileImg.onload = () => {
+          if (typeof floorTilePattern !== "undefined") {
+            floorTilePattern = ctx.createPattern(floorTileImg, "repeat");
+          }
+        };
+        floorTileImg.onerror = () => {
+          console.error("Samurai floor texture failed to load:", floorTileImg.src);
+        };
+        floorTileImg.src = "./samurai_floor_reflection_tile.png";
+      }
+
+      // Override the floor-tile renderer so the new wet stone / shallow-water texture is visible.
+      drawTexturedFloorTile = function drawTexturedFloorTile(p0, p1, p2, p3, tx, ty, fog) {
+        if (!floorTileImg.complete || floorTileImg.naturalWidth === 0) return false;
+
+        const minX = Math.min(p0.x, p1.x, p2.x, p3.x);
+        const maxX = Math.max(p0.x, p1.x, p2.x, p3.x);
+        const minY = Math.min(p0.y, p1.y, p2.y, p3.y);
+        const maxY = Math.max(p0.y, p1.y, p2.y, p3.y);
+
+        const w = maxX - minX;
+        const h = maxY - minY;
+        if (w <= 1 || h <= 1) return false;
+
+        ctx.save();
+        ctx.beginPath();
+        ctx.moveTo(p0.x, p0.y);
+        ctx.lineTo(p1.x, p1.y);
+        ctx.lineTo(p2.x, p2.y);
+        ctx.lineTo(p3.x, p3.y);
+        ctx.closePath();
+        ctx.clip();
+
+        // Stronger than the old 0.38, otherwise the old blue floor look wins visually.
+        ctx.globalAlpha = 0.74;
+        ctx.drawImage(floorTileImg, minX, minY, w, h);
+        ctx.globalAlpha = 1.0;
+
+        // Keep the arena readable and connected to the warm sky reflection.
+        const wetShade = ctx.createLinearGradient(0, minY, 0, maxY);
+        wetShade.addColorStop(0, `rgba(255, 176, 102, ${0.05 + (1 - fog) * 0.05})`);
+        wetShade.addColorStop(0.45, `rgba(8, 22, 42, ${0.10 + fog * 0.08})`);
+        wetShade.addColorStop(1, `rgba(0, 6, 18, ${0.20 + fog * 0.10})`);
+        ctx.fillStyle = wetShade;
+        ctx.fillRect(minX, minY, w, h);
+
+        ctx.restore();
+        return true;
+      };
+
 
       function drawWrappedPanoramaImageV21(img, srcX, srcY, srcW, srcH, dstX, dstY, dstW, dstH) {
         const imgW = img.naturalWidth || img.width;
