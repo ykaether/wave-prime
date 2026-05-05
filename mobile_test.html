@@ -431,12 +431,6 @@
       mobileTouch.fireButton.y = mobileTouch.aimBaseY - ringOffset;
       mobileTouch.fireButton.label = "FIRE";
 
-      mobileTouch.pauseButton.x = WIDTH - 48;
-      mobileTouch.pauseButton.y = 48;
-      mobileTouch.pauseButton.label = "II";
-      mobileTouch.fullscreenButton.x = WIDTH * 0.92;
-      mobileTouch.fullscreenButton.y = HEIGHT * 0.88;
-      mobileTouch.fullscreenButton.label = getMobileFullscreenLabel();
       mobileTouch.missileButton.x = mobileTouch.aimBaseX - ringOffset;
       mobileTouch.missileButton.y = mobileTouch.aimBaseY - ringOffset;
       mobileTouch.missileButton.label = "MIS";
@@ -446,6 +440,16 @@
       mobileTouch.jumpButton.x = mobileTouch.aimBaseX + ringOffset;
       mobileTouch.jumpButton.y = mobileTouch.aimBaseY + ringOffset;
       mobileTouch.jumpButton.label = "JMP";
+
+      // Landscape fullscreen UI:
+      // - MIN goes top-left.
+      // - PAUSE sits near the top-right but shifted left to line up with JMP.
+      mobileTouch.fullscreenButton.x = 48;
+      mobileTouch.fullscreenButton.y = 48;
+      mobileTouch.fullscreenButton.label = getMobileFullscreenLabel();
+      mobileTouch.pauseButton.x = mobileTouch.jumpButton.x;
+      mobileTouch.pauseButton.y = 48;
+      mobileTouch.pauseButton.label = "II";
 
       if (!hasActiveTouchId(mobileTouch.aimStickId)) {
         mobileTouch.aimKnobX = mobileTouch.aimBaseX;
@@ -602,6 +606,10 @@
       mobileTouch.aimKnobY = mobileTouch.aimBaseY;
       mobileTouch.aimAxisX = 0;
       mobileTouch.aimAxisY = 0;
+      mobileTouch.aimLastX = null;
+      mobileTouch.aimLastY = null;
+      mobileTouch.aimLastClientX = null;
+      mobileTouch.aimLastClientY = null;
     }
 
     function releaseTouchFire() {
@@ -612,6 +620,7 @@
     function updateTouchAimFromStick() {
       if (typeof player === "undefined") return;
       if (!hasActiveTouchId(mobileTouch.aimStickId)) return;
+      if (isPortraitStackedMode()) return;
 
       const deadzone = 0.08;
       const turnSensitivity = 0.040 * MOBILE_AIM_SENSITIVITY_MULT;
@@ -965,6 +974,8 @@
           releaseTouchJoystick();
         } else {
           releaseAimJoystick();
+          mobileTouch.aimLastClientX = null;
+          mobileTouch.aimLastClientY = null;
         }
         setDockKnob(knobEl, 0, 0);
         activeTouchId = null;
@@ -991,8 +1002,15 @@
           mobileTouch.joystickId = touch.identifier;
           updateTouchJoystick(mobileTouch.joyBaseX + pseudoX, mobileTouch.joyBaseY + pseudoY);
         } else {
+          const prevX = mobileTouch.aimLastClientX;
+          const prevY = mobileTouch.aimLastClientY;
           mobileTouch.aimStickId = touch.identifier;
           updateAimJoystick(mobileTouch.aimBaseX + pseudoX, mobileTouch.aimBaseY + pseudoY);
+          if (prevX !== null && prevY !== null) {
+            updateTouchAim(touch.clientX - prevX, touch.clientY - prevY);
+          }
+          mobileTouch.aimLastClientX = touch.clientX;
+          mobileTouch.aimLastClientY = touch.clientY;
         }
       };
 
@@ -5595,10 +5613,11 @@ ctx.fillRect(minX, minY, w, h);
     function drawPadDebugOverlay() {
       ctx.save();
 
-      const boxX = WIDTH - 310;
-      const boxY = 24;
       const boxW = 280;
       const boxH = 46;
+      const isTouchLandscape = isTouchDevice() && !isPortraitStackedMode();
+      const boxX = WIDTH - boxW - 30;
+      const boxY = isTouchLandscape ? (HEIGHT - boxH - 24) : 24;
 
       ctx.fillStyle = "rgba(0, 0, 0, 0.75)";
       ctx.fillRect(boxX, boxY, boxW, boxH);
