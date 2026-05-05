@@ -104,9 +104,6 @@
       box-shadow: 0 0 22px rgba(120,255,255,0.34);
       border-color: rgba(120,255,255,0.72);
     }
-    #dockFull {
-      display: none !important;
-    }
   </style>
 </head>
 <body>
@@ -387,34 +384,46 @@
 
     function layoutPortraitDockFromLandscape() {
       if (!mobileDock || !isPortraitStackedMode()) return;
+
       const rect = mobileDock.getBoundingClientRect();
       const panelW = rect.width || window.innerWidth;
       const panelH = rect.height || Math.round(window.innerHeight * 0.5);
-      const leftHalfW = panelW * 0.5;
-      const rightHalfX = panelW * 0.5;
-      const rightHalfW = panelW * 0.5;
-      const edgeInset = Math.max(16, panelW * 0.03);
-      const topGapY = panelH * 0.12;
 
-      const aimSize = Math.min(140, Math.max(118, panelW * 0.19));
-      const padSize = aimSize;
-      const knobSize = Math.round(56 * (padSize / 148));
-      const buttonFireSize = Math.min(86, Math.max(76, panelW * 0.118));
-      const buttonSize = Math.min(78, Math.max(68, panelW * 0.102));
+      // Portrait target:
+      // - MOVE remains on the left half.
+      // - AIM/actions stay entirely in the right half.
+      // - PAUSE and FULL sit on the same top utility row.
+      const rightHalfX = panelW * 0.5;
+      const rightHalfW = panelW - rightHalfX;
+      const edgeInset = Math.max(6, panelW * 0.015);
+
+      const padSize = Math.min(130, Math.max(104, panelW * 0.29));
+      const aimSize = padSize;
+      const knobSize = Math.round(52 * (padSize / 130));
+
+      const buttonSize = Math.min(66, Math.max(56, panelW * 0.16));
+      const buttonFireSize = buttonSize;
       const aimRadiusPx = aimSize / 2;
       const buttonRadiusPx = buttonSize / 2;
-      const clusterCenterX = rightHalfX + rightHalfW * 0.50;
+
+      // Keep the right-side cluster compact enough to fit from center to right edge.
+      const ringOffsetX = Math.max(buttonRadiusPx * 1.45, aimRadiusPx + buttonRadiusPx - 31);
+      const ringOffsetY = Math.max(aimRadiusPx + buttonRadiusPx - 4, panelH * 0.20);
+
+      const targetAimX = rightHalfX + rightHalfW * 0.50;
+      const minAimX = rightHalfX + ringOffsetX + buttonRadiusPx;
+      const maxAimX = panelW - edgeInset - ringOffsetX - buttonRadiusPx;
+      const aimX = Math.max(minAimX, Math.min(maxAimX, targetAimX));
+      const joyX = Math.min(
+        rightHalfX - padSize / 2 - edgeInset,
+        Math.max(edgeInset + padSize / 2, panelW - aimX)
+      );
+
       const aimY = panelH * 0.62;
       const joyY = aimY;
-      const ringOffsetX = aimRadiusPx + buttonRadiusPx - 6;
-      const ringOffsetY = aimRadiusPx + buttonRadiusPx - 4;
+      const utilityY = Math.max(buttonRadiusPx + 8, panelH * 0.14);
       const topButtonY = aimY - ringOffsetY;
       const bottomButtonY = aimY + ringOffsetY;
-      const utilityY = Math.max(buttonSize * 0.72, topGapY + buttonSize * 0.75);
-      const minCenterX = rightHalfX + edgeInset + Math.max(aimRadiusPx, buttonRadiusPx);
-      const maxCenterX = panelW - edgeInset - Math.max(ringOffsetX + buttonFireSize / 2, ringOffsetX + buttonRadiusPx);
-      const aimX = Math.max(minCenterX, Math.min(maxCenterX, clusterCenterX));
-      const joyX = panelW - aimX;
 
       mobileTouch.joyBaseX = WIDTH * 0.18;
       mobileTouch.joyBaseY = HEIGHT * 0.5;
@@ -423,14 +432,18 @@
       mobileTouch.joyRadius = 78;
       mobileTouch.aimRadius = 78;
 
+      if (dockFullEl) {
+        dockFullEl.style.display = "flex";
+      }
+
       setDockElementBox(movePadEl, joyX, joyY, padSize);
       setDockElementBox(aimPadEl, aimX, aimY, aimSize);
+      setDockElementBox(dockPauseEl, aimX - ringOffsetX, utilityY, buttonSize);
+      setDockElementBox(dockFullEl, aimX + ringOffsetX, utilityY, buttonSize);
       setDockElementBox(dockMissileEl, aimX - ringOffsetX, topButtonY, buttonSize);
       setDockElementBox(dockFireEl, aimX + ringOffsetX, topButtonY, buttonFireSize);
       setDockElementBox(dockDashEl, aimX - ringOffsetX, bottomButtonY, buttonSize);
       setDockElementBox(dockJumpEl, aimX + ringOffsetX, bottomButtonY, buttonSize);
-      setDockElementBox(dockPauseEl, aimX - ringOffsetX, utilityY, buttonSize);
-      setDockElementBox(dockFullEl, aimX + ringOffsetX, utilityY, buttonSize);
 
       if (moveKnobEl) {
         moveKnobEl.style.width = `${knobSize}px`;
