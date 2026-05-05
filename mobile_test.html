@@ -1,13 +1,12 @@
 <!DOCTYPE html>
 <html lang="ja">
 <head>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover" />
   <meta name="apple-mobile-web-app-capable" content="yes" />
   <meta name="mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
-  <title>Metroid Prime Lite</title>
+  <title>Wave-Prime</title>
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; }
     body {
@@ -33,9 +32,6 @@
       font-size: 12px;
       color: #98fbff;
     }
-    body {
-      background: red !important;
-    }
   </style>
 </head>
 <body>
@@ -60,11 +56,8 @@
       canvas.style.position = "fixed";
       canvas.style.left = "50%";
       canvas.style.top = "50%";
-      canvas.style.width = "100vw";
-      canvas.style.height = "100vh";
-      canvas.style.position = "fixed";
-      canvas.style.left = "0";
-      canvas.style.top = "0";
+      canvas.style.width = `${WIDTH * scale}px`;
+      canvas.style.height = `${HEIGHT * scale}px`;
       canvas.style.transform = "translate(-50%, -50%)";
       canvas.style.margin = "0";
       canvas.style.display = "block";
