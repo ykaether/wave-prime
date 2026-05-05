@@ -6230,7 +6230,114 @@ ctx.fillRect(minX, minY, w, h);
       keys["ArrowUp"] = false;
       keys["ArrowDown"] = false;
     }
-
+    // ===== Samurai Panorama Background Patch v1 =====
+    // Lightweight rotating panorama background for the current 3D canvas renderer.
+    // Uses player.angle as the camera yaw.
+    
+    const samuraiPanoramaImg = new Image();
+    let samuraiPanoramaReady = false;
+    
+    samuraiPanoramaImg.decoding = "async";
+    samuraiPanoramaImg.loading = "eager";
+    samuraiPanoramaImg.src = "assets/backgrounds/samurai_panorama_1024x512.webp";
+    
+    samuraiPanoramaImg.onload = () => {
+      samuraiPanoramaReady = true;
+    };
+    
+    function drawWrappedPanoramaImage(img, srcX, srcY, srcW, srcH, dstX, dstY, dstW, dstH) {
+      const imgW = img.naturalWidth || img.width;
+      if (!imgW || srcW <= 0) return;
+    
+      let sx = ((srcX % imgW) + imgW) % imgW;
+      let remainingSrcW = srcW;
+      let currentDstX = dstX;
+    
+      while (remainingSrcW > 0.01) {
+        const chunkSrcW = Math.min(remainingSrcW, imgW - sx);
+        const chunkDstW = dstW * (chunkSrcW / srcW);
+    
+        ctx.drawImage(
+          img,
+          sx,
+          srcY,
+          chunkSrcW,
+          srcH,
+          currentDstX,
+          dstY,
+          chunkDstW,
+          dstH
+        );
+    
+        remainingSrcW -= chunkSrcW;
+        currentDstX += chunkDstW;
+        sx = 0;
+      }
+    }
+    
+    // Override the existing drawBackground() without touching floor/world/enemy/UI code.
+    drawBackground = function drawBackground() {
+      const horizon = getSceneHorizon();
+    
+      if (!samuraiPanoramaReady || !samuraiPanoramaImg.naturalWidth) {
+        const ceiling = ctx.createLinearGradient(0, 0, 0, horizon);
+        ceiling.addColorStop(0, "#171522");
+        ceiling.addColorStop(0.45, "#34243a");
+        ceiling.addColorStop(1, "#6e3f32");
+        ctx.fillStyle = ceiling;
+        ctx.fillRect(0, 0, WIDTH, horizon);
+    
+        ctx.fillStyle = "#0c1420";
+        ctx.fillRect(0, horizon, WIDTH, HEIGHT - horizon);
+        return;
+      }
+    
+      const img = samuraiPanoramaImg;
+      const imgW = img.naturalWidth || img.width;
+      const imgH = img.naturalHeight || img.height;
+    
+      const normalizedAngle = ((player.angle % (Math.PI * 2)) + Math.PI * 2) % (Math.PI * 2);
+    
+      // Wider than the real FOV so the background does not feel too zoomed-in.
+      // Smaller = faster/more zoomed. Larger = calmer/more panoramic.
+      const visibleSrcW = imgW * 0.56;
+      const centerSrcX = (normalizedAngle / (Math.PI * 2)) * imgW;
+      const srcX = centerSrcX - visibleSrcW / 2;
+    
+      // Small vertical movement from pitch. Keep subtle so mobile aim does not feel unstable.
+      const pitch = typeof player.pitch === "number" ? player.pitch : 0;
+      const pitchShift = clamp(pitch, -MAX_PITCH, MAX_PITCH) * HEIGHT * 0.26;
+    
+      const bgY = -HEIGHT * 0.11 + pitchShift;
+      const bgH = HEIGHT * 0.86;
+    
+      drawWrappedPanoramaImage(
+        img,
+        srcX,
+        0,
+        visibleSrcW,
+        imgH,
+        0,
+        bgY,
+        WIDTH,
+        bgH
+      );
+    
+      // Gentle atmosphere layer so enemies/UI remain readable.
+      const skyShade = ctx.createLinearGradient(0, 0, 0, horizon);
+      skyShade.addColorStop(0, "rgba(5, 8, 18, 0.18)");
+      skyShade.addColorStop(0.6, "rgba(20, 12, 18, 0.04)");
+      skyShade.addColorStop(1, "rgba(255, 180, 90, 0.06)");
+      ctx.fillStyle = skyShade;
+      ctx.fillRect(0, 0, WIDTH, horizon);
+    
+      // Base floor fill. drawFloor() still renders on top of this.
+      const floorShade = ctx.createLinearGradient(0, horizon, 0, HEIGHT);
+      floorShade.addColorStop(0, "rgba(16, 20, 22, 0.88)");
+      floorShade.addColorStop(1, "rgba(4, 8, 14, 0.98)");
+      ctx.fillStyle = floorShade;
+      ctx.fillRect(0, horizon, WIDTH, HEIGHT - horizon);
+    };
     ensureLoopRunning();
   </script>
 </body>
