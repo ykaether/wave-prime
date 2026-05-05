@@ -5622,11 +5622,11 @@ ctx.fillRect(minX, minY, w, h);
     function drawPadDebugOverlay() {
       ctx.save();
 
-      const boxW = 280;
-      const boxH = 46;
       const isTouchLandscape = isTouchDevice() && !isPortraitStackedMode();
-      const boxX = WIDTH - boxW - 30;
-      const boxY = isTouchLandscape ? (HEIGHT - boxH - 24) : 24;
+      const boxW = isTouchLandscape ? 210 : 280;
+      const boxH = isTouchLandscape ? 36 : 46;
+      const boxX = isTouchLandscape ? (WIDTH - boxW - 14) : (WIDTH - boxW - 30);
+      const boxY = isTouchLandscape ? (HEIGHT - boxH - 8) : 24;
 
       ctx.fillStyle = "rgba(0, 0, 0, 0.75)";
       ctx.fillRect(boxX, boxY, boxW, boxH);
@@ -5636,10 +5636,10 @@ ctx.fillRect(minX, minY, w, h);
       ctx.strokeRect(boxX, boxY, boxW, boxH);
 
       ctx.fillStyle = "#ffffff";
-      ctx.font = "18px sans-serif";
+      ctx.font = isTouchLandscape ? "15px sans-serif" : "18px sans-serif";
       ctx.textAlign = "left";
       ctx.textBaseline = "middle";
-      ctx.fillText(`PAD Buttons: ${debugPressedButtons}`, boxX + 14, boxY + boxH / 2);
+      ctx.fillText(`PAD Buttons: ${debugPressedButtons}`, boxX + 10, boxY + boxH / 2);
 
       ctx.restore();
     }
