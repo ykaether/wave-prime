@@ -61,10 +61,10 @@
     const HALF_FOV = FOV / 2;
     const RAYS = 80;
     const MAX_DEPTH = 18;
-    const MOVE_SPEED = 0.052;
-    const STRAFE_SPEED = 0.044;
+    const MOVE_SPEED = 0.070;      // FPS-like base walk speed: faster normal movement
+    const STRAFE_SPEED = 0.066;    // FPS-like strafe speed: close to forward speed
     const TURN_SPEED = 0.017;
-    const DASH_MULT = 2.3;
+    const DASH_MULT = 1.75;        // keep sprint/dash from becoming too extreme after walk-speed boost
     const AIM_PITCH_SPEED = 0.014;
     const MAX_PITCH = 0.42;
     const MOUSE_SENS_X = 0.0025;
@@ -1602,8 +1602,8 @@
       let strafe = 0;
       if (keys.KeyW || keys.ArrowUp || keys._forward) step += MOVE_SPEED * moveMult;
       if (keys.KeyS || keys.ArrowDown || keys._back) step -= MOVE_SPEED * moveMult;
-      // lock-on sidestep: 2.5x strafe boost when locked on
-      const sidestepMult = player.lockTarget ? 2.5 : 1;
+      // lock-on sidestep: lighter FPS-style strafe assist when locked on
+      const sidestepMult = player.lockTarget ? 1.35 : 1;
       if (keys.KeyA) { strafe += STRAFE_SPEED * moveMult * sidestepMult; if (player.lockTarget) player.dashGlow = 10; }
       if (keys.KeyD) { strafe -= STRAFE_SPEED * moveMult * sidestepMult; if (player.lockTarget) player.dashGlow = 10; }
       if (keys._left) { strafe -= STRAFE_SPEED * moveMult * sidestepMult; if (player.lockTarget) player.dashGlow = 10; }
