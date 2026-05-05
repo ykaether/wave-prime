@@ -358,7 +358,7 @@
       const rightHalfX = panelW * 0.5;
       const rightHalfW = panelW * 0.5;
       const edgeInset = Math.max(16, panelW * 0.03);
-      const topGapY = panelH * 0.14;
+      const topGapY = panelH * 0.12;
 
       const aimSize = Math.min(140, Math.max(118, panelW * 0.19));
       const padSize = aimSize;
@@ -367,22 +367,25 @@
       const buttonSize = Math.min(78, Math.max(68, panelW * 0.102));
       const aimRadiusPx = aimSize / 2;
       const buttonRadiusPx = buttonSize / 2;
-      const joyX = leftHalfW * 0.34;
+      const clusterCenterX = rightHalfX + rightHalfW * 0.50;
       const aimY = panelH * 0.62;
       const joyY = aimY;
       const ringOffsetX = aimRadiusPx + buttonRadiusPx - 6;
       const ringOffsetY = aimRadiusPx + buttonRadiusPx - 4;
       const topButtonY = aimY - ringOffsetY;
       const bottomButtonY = aimY + ringOffsetY;
-      const utilityY = Math.max(buttonSize * 0.7, topGapY + buttonSize * 0.55);
+      const utilityY = Math.max(buttonSize * 0.72, topGapY + buttonSize * 0.75);
       const minCenterX = rightHalfX + edgeInset + Math.max(aimRadiusPx, buttonRadiusPx);
       const maxCenterX = panelW - edgeInset - Math.max(ringOffsetX + buttonFireSize / 2, ringOffsetX + buttonRadiusPx);
-      const aimX = Math.max(minCenterX, Math.min(maxCenterX, rightHalfX + rightHalfW * 0.56));
+      const aimX = Math.max(minCenterX, Math.min(maxCenterX, clusterCenterX));
+      const joyX = panelW - aimX;
 
       mobileTouch.joyBaseX = WIDTH * 0.18;
       mobileTouch.joyBaseY = HEIGHT * 0.5;
       mobileTouch.aimBaseX = WIDTH - WIDTH * 0.18;
       mobileTouch.aimBaseY = HEIGHT * 0.5;
+      mobileTouch.joyRadius = 78;
+      mobileTouch.aimRadius = 78;
 
       setDockElementBox(movePadEl, joyX, joyY, padSize);
       setDockElementBox(aimPadEl, aimX, aimY, aimSize);
@@ -485,9 +488,9 @@
       if (typeof player === "undefined") return;
       if (!hasActiveTouchId(mobileTouch.aimStickId)) return;
 
-      const deadzone = 0.16;
-      const turnSensitivity = 0.024;
-      const pitchSensitivity = 0.014;
+      const deadzone = 0.08;
+      const turnSensitivity = 0.040;
+      const pitchSensitivity = 0.024;
       const rawX = mobileTouch.aimAxisX;
       const rawY = mobileTouch.aimAxisY;
       const mag = Math.hypot(rawX, rawY);
@@ -590,9 +593,9 @@
     
       // Horizontal aim should turn much more per swipe.
       // Vertical aim stays calmer to avoid mobile camera instability.
-      const yawSensitivity = 0.006;
-      const pitchSensitivity = 0.00065;
-      const pitchLimit = 0.32;
+      const yawSensitivity = 0.0085;
+      const pitchSensitivity = 0.00115;
+      const pitchLimit = 0.4;
     
       if (Math.abs(dx) < 1.2) dx = 0;
       if (Math.abs(dy) < 1.2) dy = 0;
