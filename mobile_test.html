@@ -152,6 +152,10 @@
       return isTouchDevice() && window.innerHeight > window.innerWidth;
     }
 
+    function hasActiveTouchId(id) {
+      return id !== null && id !== undefined;
+    }
+
     function fitCanvasToViewport() {
       if (typeof canvas === "undefined") return;
 
@@ -303,7 +307,7 @@
       mobileTouch.joyBaseX = stickInsetX;
       mobileTouch.joyBaseY = stickCenterY;
 
-      if (!mobileTouch.joystickId) {
+      if (!hasActiveTouchId(mobileTouch.joystickId)) {
         mobileTouch.joyKnobX = mobileTouch.joyBaseX;
         mobileTouch.joyKnobY = mobileTouch.joyBaseY;
       }
@@ -331,7 +335,7 @@
       mobileTouch.jumpButton.y = mobileTouch.aimBaseY + ringOffset;
       mobileTouch.jumpButton.label = "JMP";
 
-      if (!mobileTouch.aimStickId) {
+      if (!hasActiveTouchId(mobileTouch.aimStickId)) {
         mobileTouch.aimKnobX = mobileTouch.aimBaseX;
         mobileTouch.aimKnobY = mobileTouch.aimBaseY;
       }
@@ -479,7 +483,7 @@
 
     function updateTouchAimFromStick() {
       if (typeof player === "undefined") return;
-      if (!mobileTouch.aimStickId) return;
+      if (!hasActiveTouchId(mobileTouch.aimStickId)) return;
 
       const deadzone = 0.16;
       const turnSensitivity = 0.024;
@@ -5959,7 +5963,7 @@ ctx.fillRect(minX, minY, w, h);
       }
 
       canvas.style.filter = visorMode === "xray" ? "grayscale(1) brightness(1.18) contrast(1.08)" : "none";
-      // updateTouchAimFromStick();
+      updateTouchAimFromStick();
       updatePlayer();
       updateEnemies();
       updateEnemyShots();
