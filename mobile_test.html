@@ -350,24 +350,25 @@
       const rect = mobileDock.getBoundingClientRect();
       const panelW = rect.width || window.innerWidth;
       const panelH = rect.height || Math.round(window.innerHeight * 0.5);
-      const virtualScale = Math.min(panelW / WIDTH, panelH / HEIGHT) * 0.94;
-      const virtualW = WIDTH * virtualScale;
-      const virtualH = HEIGHT * virtualScale;
-      const offsetX = (panelW - virtualW) / 2;
-      const offsetY = (panelH - virtualH) / 2;
-      const mapX = x => offsetX + x * virtualScale;
-      const mapY = y => offsetY + y * virtualScale;
-      const padSize = mobileTouch.joyRadius * 2 * virtualScale;
-      const aimSize = mobileTouch.aimRadius * 2 * virtualScale;
-      const knobSize = 56 * virtualScale;
-      const buttonFireSize = mobileTouch.fireButton.r * 2 * virtualScale;
-      const buttonSize = mobileTouch.missileButton.r * 2 * virtualScale;
+      const leftHalfW = panelW * 0.5;
+      const rightHalfX = panelW * 0.5;
+      const rightHalfW = panelW * 0.5;
 
-      const joyX = mapX(WIDTH * 0.18);
-      const joyY = mapY(HEIGHT * 0.5);
-      const aimX = mapX(WIDTH - WIDTH * 0.18);
-      const aimY = mapY(HEIGHT * 0.5);
-      const ringOffset = 116;
+      const joyX = leftHalfW * 0.34;
+      const joyY = panelH * 0.56;
+      const aimX = rightHalfX + rightHalfW * 0.52;
+      const aimY = panelH * 0.54;
+
+      const padSize = Math.min(170, Math.max(142, panelW * 0.24));
+      const aimSize = Math.min(156, Math.max(132, panelW * 0.22));
+      const knobSize = Math.round(56 * (padSize / 148));
+      const buttonFireSize = Math.min(86, Math.max(74, panelW * 0.12));
+      const buttonSize = Math.min(78, Math.max(68, panelW * 0.105));
+      const ringOffsetX = Math.min(rightHalfW * 0.28, Math.max(82, rightHalfW * 0.22));
+      const ringOffsetY = Math.min(panelH * 0.24, Math.max(68, panelH * 0.19));
+      const utilityX = rightHalfX + rightHalfW * 0.14;
+      const utilityTopY = panelH * 0.34;
+      const utilityBottomY = panelH * 0.70;
 
       mobileTouch.joyBaseX = WIDTH * 0.18;
       mobileTouch.joyBaseY = HEIGHT * 0.5;
@@ -376,12 +377,12 @@
 
       setDockElementBox(movePadEl, joyX, joyY, padSize);
       setDockElementBox(aimPadEl, aimX, aimY, aimSize);
-      setDockElementBox(dockFireEl, mapX(mobileTouch.aimBaseX + ringOffset), mapY(mobileTouch.aimBaseY - ringOffset), buttonFireSize);
-      setDockElementBox(dockMissileEl, mapX(mobileTouch.aimBaseX - ringOffset), mapY(mobileTouch.aimBaseY - ringOffset), buttonSize);
-      setDockElementBox(dockDashEl, mapX(mobileTouch.aimBaseX - ringOffset), mapY(mobileTouch.aimBaseY + ringOffset), buttonSize);
-      setDockElementBox(dockJumpEl, mapX(mobileTouch.aimBaseX + ringOffset), mapY(mobileTouch.aimBaseY + ringOffset), buttonSize);
-      setDockElementBox(dockPauseEl, mapX(WIDTH - 48), mapY(48), buttonSize);
-      setDockElementBox(dockFullEl, mapX(WIDTH * 0.92), mapY(HEIGHT * 0.88), buttonSize);
+      setDockElementBox(dockFireEl, aimX + ringOffsetX, aimY - ringOffsetY, buttonFireSize);
+      setDockElementBox(dockMissileEl, aimX - ringOffsetX, aimY - ringOffsetY, buttonSize);
+      setDockElementBox(dockDashEl, aimX - ringOffsetX, aimY + ringOffsetY, buttonSize);
+      setDockElementBox(dockJumpEl, aimX + ringOffsetX, aimY + ringOffsetY, buttonSize);
+      setDockElementBox(dockPauseEl, utilityX, utilityTopY, buttonSize);
+      setDockElementBox(dockFullEl, utilityX, utilityBottomY, buttonSize);
 
       if (moveKnobEl) {
         moveKnobEl.style.width = `${knobSize}px`;
