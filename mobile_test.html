@@ -1950,7 +1950,183 @@
     function resumeGame() {
       if (cleanupDone) return;
       gamePaused = false;
-      ensureLoopRunning();
+      
+
+    // ===== Samurai Panorama Water Reflection Patch v2 =====
+    (function applySamuraiPanoramaWaterPatch() {
+      const panoramaImg = (() => {
+        if (typeof samuraiPanoramaImg !== 'undefined') {
+          samuraiPanoramaImg.src = "./samurai_panorama_1024x512.png";
+          samuraiPanoramaImg.onerror = () => {
+            console.error("Samurai panorama failed to load:", samuraiPanoramaImg.src);
+          };
+          return samuraiPanoramaImg;
+        }
+        const img = new Image();
+        img.decoding = "async";
+        img.loading = "eager";
+        img.src = "./samurai_panorama_1024x512.png";
+        img.onerror = () => {
+          console.error("Samurai panorama failed to load:", img.src);
+        };
+        return img;
+      })();
+
+      function drawWrappedPanoramaImageV2(img, srcX, srcY, srcW, srcH, dstX, dstY, dstW, dstH) {
+        const imgW = img.naturalWidth || img.width;
+        if (!imgW || srcW <= 0) return;
+
+        let sx = ((srcX % imgW) + imgW) % imgW;
+        let remainingSrcW = srcW;
+        let currentDstX = dstX;
+
+        while (remainingSrcW > 0.01) {
+          const chunkSrcW = Math.min(remainingSrcW, imgW - sx);
+          const chunkDstW = dstW * (chunkSrcW / srcW);
+
+          ctx.drawImage(
+            img,
+            sx,
+            srcY,
+            chunkSrcW,
+            srcH,
+            currentDstX,
+            dstY,
+            chunkDstW,
+            dstH
+          );
+
+          remainingSrcW -= chunkSrcW;
+          currentDstX += chunkDstW;
+          sx = 0;
+        }
+      }
+
+      const baseDrawFloor = drawFloor;
+
+      drawBackground = function drawBackground() {
+        const horizon = getSceneHorizon();
+
+        if (!panoramaImg.complete || !panoramaImg.naturalWidth) {
+          const ceiling = ctx.createLinearGradient(0, 0, 0, horizon);
+          ceiling.addColorStop(0, "#171522");
+          ceiling.addColorStop(0.45, "#34243a");
+          ceiling.addColorStop(1, "#6e3f32");
+          ctx.fillStyle = ceiling;
+          ctx.fillRect(0, 0, WIDTH, horizon);
+
+          ctx.fillStyle = "#08101a";
+          ctx.fillRect(0, horizon, WIDTH, HEIGHT - horizon);
+          return;
+        }
+
+        const img = panoramaImg;
+        const imgW = img.naturalWidth || img.width;
+        const imgH = img.naturalHeight || img.height;
+        const normalizedAngle = ((player.angle % (Math.PI * 2)) + Math.PI * 2) % (Math.PI * 2);
+
+        // Reverse the panorama movement so camera turn direction feels natural.
+        const visibleSrcW = imgW * 0.56;
+        const centerSrcX = (1 - normalizedAngle / (Math.PI * 2)) * imgW;
+        const srcX = centerSrcX - visibleSrcW / 2;
+
+        const pitch = typeof player.pitch === "number" ? player.pitch : 0;
+        const pitchShift = clamp(pitch, -MAX_PITCH, MAX_PITCH) * HEIGHT * 0.22;
+        const bgY = -HEIGHT * 0.11 + pitchShift;
+        const bgH = HEIGHT * 0.74;
+
+        drawWrappedPanoramaImageV2(
+          img,
+          srcX,
+          0,
+          visibleSrcW,
+          imgH,
+          0,
+          bgY,
+          WIDTH,
+          bgH
+        );
+
+        const skyShade = ctx.createLinearGradient(0, 0, 0, horizon);
+        skyShade.addColorStop(0, "rgba(5, 8, 18, 0.16)");
+        skyShade.addColorStop(0.62, "rgba(22, 12, 20, 0.04)");
+        skyShade.addColorStop(1, "rgba(255, 186, 110, 0.08)");
+        ctx.fillStyle = skyShade;
+        ctx.fillRect(0, 0, WIDTH, horizon);
+
+        // Reflection layer for the lower half: mirrored panorama, darkened and faded.
+        const reflectionTop = horizon;
+        const reflectionH = HEIGHT - reflectionTop;
+        const shimmerOffset = Math.sin(performance.now() * 0.00045) * imgW * 0.003;
+        ctx.save();
+        ctx.globalAlpha = 0.24;
+        drawWrappedPanoramaImageV2(
+          img,
+          srcX + shimmerOffset,
+          0,
+          visibleSrcW,
+          imgH,
+          0,
+          HEIGHT,
+          WIDTH,
+          -reflectionH * 0.96
+        );
+        ctx.restore();
+
+        const reflectionShade = ctx.createLinearGradient(0, reflectionTop, 0, HEIGHT);
+        reflectionShade.addColorStop(0, "rgba(15, 30, 50, 0.16)");
+        reflectionShade.addColorStop(0.18, "rgba(8, 18, 34, 0.42)");
+        reflectionShade.addColorStop(0.58, "rgba(4, 12, 26, 0.82)");
+        reflectionShade.addColorStop(1, "rgba(2, 8, 18, 0.98)");
+        ctx.fillStyle = reflectionShade;
+        ctx.fillRect(0, reflectionTop, WIDTH, reflectionH);
+
+        const horizonGlow = ctx.createLinearGradient(0, horizon - 6, 0, horizon + 18);
+        horizonGlow.addColorStop(0, "rgba(255, 210, 160, 0.00)");
+        horizonGlow.addColorStop(0.45, "rgba(255, 190, 120, 0.16)");
+        horizonGlow.addColorStop(1, "rgba(60, 110, 170, 0.02)");
+        ctx.fillStyle = horizonGlow;
+        ctx.fillRect(0, horizon - 6, WIDTH, 24);
+      };
+
+      drawFloor = function drawFloor() {
+        baseDrawFloor();
+
+        const horizon = getSceneHorizon();
+        const floorTop = horizon;
+        const floorH = HEIGHT - floorTop;
+
+        // Cooler base tint so the floor matches the sky/reflection palette.
+        const floorTint = ctx.createLinearGradient(0, floorTop, 0, HEIGHT);
+        floorTint.addColorStop(0, "rgba(250, 182, 120, 0.10)");
+        floorTint.addColorStop(0.14, "rgba(38, 78, 126, 0.08)");
+        floorTint.addColorStop(0.45, "rgba(8, 26, 54, 0.18)");
+        floorTint.addColorStop(1, "rgba(2, 10, 24, 0.28)");
+        ctx.fillStyle = floorTint;
+        ctx.fillRect(0, floorTop, WIDTH, floorH);
+
+        // Subtle water-like scanline reflections.
+        const t = performance.now() * 0.00115;
+        ctx.save();
+        for (let i = 0; i < 5; i++) {
+          const y = floorTop + 24 + i * 34 + Math.sin(t * 1.6 + i * 1.45) * 4;
+          ctx.beginPath();
+          for (let x = 0; x <= WIDTH; x += 18) {
+            const waveY = y + Math.sin(t * 2.1 + x * 0.012 + i) * 1.8;
+            if (x === 0) ctx.moveTo(x, waveY);
+            else ctx.lineTo(x, waveY);
+          }
+          ctx.strokeStyle = i < 2
+            ? "rgba(255, 198, 132, 0.05)"
+            : "rgba(120, 190, 255, 0.035)";
+          ctx.lineWidth = 1;
+          ctx.stroke();
+        }
+        ctx.restore();
+      };
+    })();
+
+    ensureLoopRunning();
     }
 
     function startGame() {
