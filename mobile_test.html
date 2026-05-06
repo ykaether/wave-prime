@@ -6232,20 +6232,19 @@ ctx.fillRect(minX, minY, w, h);
     }
 
 
-    // ===== SP Lightweight Pink / Ice-White Hex Background Only =====
-    // Background-only replacement:
-    // - Removes heavy SP 360 panorama image draw + reflection draw.
-    // - Does NOT modify movement, touch controls, enemies, bullets, game loop, or drawFloor().
-    // - Overrides drawBackground() only.
-    (function applySpPinkIceHexBackgroundOnly() {
-      const spHexBg = {
+    // ===== SP Cached Rich Sci-Fi Dot Background v2 =====
+    // Background-only replacement for SP.
+    // Replaces the heavy panorama patch with a cached dot/pixel background.
+    // Touches drawBackground() only. Movement, touch controls, enemies, bullets,
+    // HUD, pause, fullscreen, and game loop are left unchanged.
+    (function applySpCachedRichDotBackgroundV2() {
+      const spDotBg = {
         initialized: false,
-        stars: [],
-        hexes: [],
         lastW: 0,
         lastH: 0,
-        r: 6.0,
-        seed: 2026050612,
+        staticLayer: null,
+        waveLayer: null,
+        seed: 2026050617,
       };
 
       function createSeededRandom(seed) {
@@ -6255,193 +6254,211 @@ ctx.fillRect(minX, minY, w, h);
         };
       }
 
-      function initSpHexBackground() {
-        if (spHexBg.initialized && spHexBg.lastW === WIDTH && spHexBg.lastH === HEIGHT) return;
-
-        const rand = createSeededRandom(spHexBg.seed);
-        const R = spHexBg.r;
-        const rowH = Math.sqrt(3) * R;
-
-        spHexBg.stars.length = 0;
-        spHexBg.hexes.length = 0;
-
-        // Sparse stars only. Kept very light for SP.
-        for (let i = 0; i < 18; i++) {
-          spHexBg.stars.push({
-            x: rand() * WIDTH,
-            y: rand() * HEIGHT,
-            a: 0.03 + rand() * 0.08,
-            p: rand() * Math.PI * 2,
-            s: 1,
-          });
-        }
-
-        // Hex sheet. The layout is fixed; only color/brightness/position subtly waves.
-        for (let row = -1; row < Math.ceil(HEIGHT / rowH) + 2; row++) {
-          for (let col = -1; col < Math.ceil(WIDTH / (R * 3)) + 2; col++) {
-            const x = col * R * 3 + (row % 2 ? R * 1.5 : 0);
-            const y = row * rowH;
-            if (x < -24 || x > WIDTH + 24 || y < -24 || y > HEIGHT + 24) continue;
-
-            let weight = 1.0;
-            if (y > HEIGHT * 0.70) weight = 1.08;
-            else if (y < HEIGHT * 0.25) weight = 0.92;
-
-            spHexBg.hexes.push({
-              x,
-              y,
-              seed: rand() * Math.PI * 2,
-              w: weight,
-            });
-          }
-        }
-
-        spHexBg.initialized = true;
-        spHexBg.lastW = WIDTH;
-        spHexBg.lastH = HEIGHT;
+      function clamp01(v) {
+        return Math.max(0, Math.min(1, v));
       }
 
-      function mix(a, b, t) {
+      function lerp(a, b, t) {
         return a + (b - a) * t;
       }
 
-      function smoothstep(edge0, edge1, x) {
-        const k = clamp((x - edge0) / (edge1 - edge0), 0, 1);
-        return k * k * (3 - 2 * k);
-      }
-
       function lerpColor(c1, c2, t) {
-        const r = Math.round(mix(c1[0], c2[0], t));
-        const g = Math.round(mix(c1[1], c2[1], t));
-        const b = Math.round(mix(c1[2], c2[2], t));
+        const r = Math.round(lerp(c1[0], c2[0], t));
+        const g = Math.round(lerp(c1[1], c2[1], t));
+        const b = Math.round(lerp(c1[2], c2[2], t));
         return `rgb(${r}, ${g}, ${b})`;
       }
 
-      function pathHex(x, y, rr) {
-        ctx.beginPath();
-        for (let k = 0; k < 6; k++) {
-          const a = Math.PI / 6 + k * Math.PI / 3;
-          const px = x + Math.cos(a) * rr;
-          const py = y + Math.sin(a) * rr;
-          if (k === 0) ctx.moveTo(px, py);
-          else ctx.lineTo(px, py);
-        }
-        ctx.closePath();
+      function makeCanvas(w, h) {
+        const c = document.createElement('canvas');
+        c.width = w;
+        c.height = h;
+        return c;
       }
 
-      function drawWrappedHex(x, y, rr, stroke, alpha, fillGlow) {
-        ctx.globalAlpha = alpha;
-        ctx.strokeStyle = stroke;
-        ctx.lineWidth = 0.88;
-        pathHex(x, y, rr);
-        ctx.stroke();
-
-        if (fillGlow) {
-          ctx.globalAlpha = alpha * 0.30;
-          ctx.fillStyle = stroke;
-          pathHex(x, y, rr * 1.14);
-          ctx.fill();
-        }
+      function drawDot(g, x, y, size, color, alpha) {
+        g.globalAlpha = alpha;
+        g.fillStyle = color;
+        g.fillRect(Math.round(x), Math.round(y), size, size);
       }
 
-      function drawSpStars(t) {
-        ctx.fillStyle = "#ffd2f4";
-        for (const s of spHexBg.stars) {
-          ctx.globalAlpha = s.a * (0.85 + Math.sin(t * 0.35 + s.p) * 0.15);
-          ctx.fillRect(s.x, s.y, s.s, s.s);
+      function buildStaticLayer(rand) {
+        const cacheW = WIDTH * 2;
+        const cacheH = HEIGHT;
+        const c = makeCanvas(cacheW, cacheH);
+        const g = c.getContext('2d', { alpha: true });
+
+        const bg = g.createLinearGradient(0, 0, 0, cacheH);
+        bg.addColorStop(0, '#050313');
+        bg.addColorStop(0.42, '#100922');
+        bg.addColorStop(0.72, '#07071a');
+        bg.addColorStop(1, '#02030a');
+        g.fillStyle = bg;
+        g.fillRect(0, 0, cacheW, cacheH);
+
+        const glow1 = g.createRadialGradient(cacheW * 0.18, cacheH * 0.50, 0, cacheW * 0.18, cacheH * 0.50, cacheW * 0.22);
+        glow1.addColorStop(0, 'rgba(255, 80, 190, 0.14)');
+        glow1.addColorStop(0.62, 'rgba(130, 40, 155, 0.040)');
+        glow1.addColorStop(1, 'rgba(0,0,0,0)');
+        g.fillStyle = glow1;
+        g.fillRect(0, 0, cacheW, cacheH);
+
+        const glow2 = g.createRadialGradient(cacheW * 0.62, cacheH * 0.42, 0, cacheW * 0.62, cacheH * 0.42, cacheW * 0.28);
+        glow2.addColorStop(0, 'rgba(72, 220, 255, 0.16)');
+        glow2.addColorStop(0.55, 'rgba(70, 95, 210, 0.050)');
+        glow2.addColorStop(1, 'rgba(0,0,0,0)');
+        g.fillStyle = glow2;
+        g.fillRect(0, 0, cacheW, cacheH);
+
+        // Global pixel field.
+        for (let i = 0; i < 950; i++) {
+          const x = rand() * cacheW;
+          const y = rand() * cacheH;
+          const pick = rand();
+          const size = pick < 0.70 ? 1 : (pick < 0.93 ? 2 : 3);
+          const alpha = 0.025 + rand() * 0.17;
+          const color = pick < 0.42 ? '#86f4ff' : (pick < 0.74 ? '#ff9fe7' : '#edf6ff');
+          drawDot(g, x, y, size, color, alpha);
         }
-        ctx.globalAlpha = 1;
-      }
+        g.globalAlpha = 1;
 
-      function drawSpHexSurface(t) {
-        const R = spHexBg.r;
+        // Dot clusters / blobs.
+        const clusters = [
+          [WIDTH * 0.25, HEIGHT * 0.59, WIDTH * 0.145, HEIGHT * 0.155, 420, [94, 240, 255], [255, 155, 230], 0.1],
+          [WIDTH * 0.67, HEIGHT * 0.36, WIDTH * 0.19, HEIGHT * 0.21, 580, [255, 150, 228], [232, 244, 255], 1.2],
+          [WIDTH * 1.17, HEIGHT * 0.65, WIDTH * 0.155, HEIGHT * 0.165, 380, [95, 232, 255], [170, 120, 255], 2.1],
+          [WIDTH * 1.69, HEIGHT * 0.49, WIDTH * 0.215, HEIGHT * 0.225, 620, [255, 135, 215], [110, 240, 255], 3.0],
+        ];
 
-        // Camera-based horizontal offset so it behaves like a continuous 360-style sheet.
-        const normalizedAngle = ((player.angle % (Math.PI * 2)) + Math.PI * 2) % (Math.PI * 2);
-        const cameraShift = (normalizedAngle / (Math.PI * 2)) * WIDTH;
+        for (const cl of clusters) {
+          const [cx, cy, rx, ry, count, c1, c2, phase] = cl;
 
-        // Slow, smooth surface-band motion.
-        const travel = t * 0.40;
+          const halo = g.createRadialGradient(cx, cy, 0, cx, cy, Math.max(rx, ry) * 1.55);
+          halo.addColorStop(0, 'rgba(160, 220, 255, 0.060)');
+          halo.addColorStop(0.48, 'rgba(255, 120, 220, 0.036)');
+          halo.addColorStop(1, 'rgba(0,0,0,0)');
+          g.fillStyle = halo;
+          g.fillRect(cx - rx * 1.8, cy - ry * 1.8, rx * 3.6, ry * 3.6);
 
-        // Ice-white on pink palette.
-        const C_DARK = [117, 86, 150];
-        const C_MID  = [210, 154, 230];
-        const C_BRT  = [255, 238, 248];
-
-        for (const h of spHexBg.hexes) {
-          let visibleX = ((h.x - cameraShift) % WIDTH + WIDTH) % WIDTH;
-          const worldX = h.x + cameraShift;
-
-          // Broad smooth bands: bright -> dark -> bright over the whole surface.
-          const band1 = Math.sin(worldX * 0.0125 - travel * 1.65 + h.y * 0.0088);
-          const band2 = Math.sin(worldX * 0.0065 - h.y * 0.0120 - travel * 0.88 + h.seed * 0.10);
-          const band3 = Math.sin((worldX + h.y) * 0.0038 - travel * 0.48);
-
-          let v = 0.5 + band1 * 0.16 + band2 * 0.10 + band3 * 0.04;
-          v = clamp(v, 0, 1);
-          const vSmooth = smoothstep(0.03, 0.97, v);
-
-          const shiftX = (band2 * 0.40 + band3 * 0.12);
-          const liftY = (band1 * 1.05 + band2 * 0.72 + band3 * 0.28) * h.w;
-
-          const x = visibleX + shiftX;
-          const y = h.y - liftY;
-
-          const rr = R * (0.95 + vSmooth * 0.13) * h.w;
-          const alpha = 0.085 + vSmooth * 0.15;
-
-          const t1 = Math.min(vSmooth / 0.60, 1);
-          const t2 = Math.max(0, (vSmooth - 0.40) / 0.60);
-          const cA = lerpColor(C_DARK, C_MID, t1);
-          const cB = lerpColor(C_MID, C_BRT, t2);
-          const stroke = vSmooth < 0.52 ? cA : cB;
-          const fillGlow = vSmooth > 0.78;
-
-          drawWrappedHex(x, y, rr, stroke, alpha, fillGlow);
-
-          // Edge copies for horizontal seamless feel.
-          if (x < 20) drawWrappedHex(x + WIDTH, y, rr, stroke, alpha, fillGlow);
-          else if (x > WIDTH - 20) drawWrappedHex(x - WIDTH, y, rr, stroke, alpha, fillGlow);
-
-          // Very sparse pixel accent. Kept subtle.
-          if (((h.x + h.y) % 40) < 1.0 && vSmooth > 0.58) {
-            ctx.globalAlpha = 0.018 + vSmooth * 0.06;
-            ctx.fillStyle = lerpColor(C_MID, C_BRT, Math.max(0, (vSmooth - 0.52) / 0.48));
-            ctx.fillRect(x - 1, y - 1, 2, 2);
+          for (let i = 0; i < count; i++) {
+            const a = rand() * Math.PI * 2;
+            const rr = Math.pow(rand(), 0.72);
+            const wobble = 1 + Math.sin(a * 3 + phase) * 0.08 + Math.cos(a * 5 + phase * 0.7) * 0.04;
+            const x = cx + Math.cos(a) * rx * rr * wobble;
+            const y = cy + Math.sin(a) * ry * rr * wobble;
+            const tt = Math.min(1, rr + rand() * 0.18);
+            const color = lerpColor(c1, c2, tt);
+            const sizeRoll = rand();
+            const size = sizeRoll < 0.62 ? 1 : (sizeRoll < 0.92 ? 2 : 3);
+            const alpha = 0.05 + (1 - rr) * 0.26;
+            drawDot(g, x, y, size, color, alpha);
           }
         }
+        g.globalAlpha = 1;
 
-        ctx.globalAlpha = 1;
+        // Lower field / floor-like dot density.
+        for (let i = 0; i < 700; i++) {
+          const x = rand() * cacheW;
+          const y = cacheH * (0.66 + rand() * 0.30);
+          const alpha = 0.025 + rand() * 0.12;
+          const size = rand() < 0.72 ? 1 : 2;
+          const color = rand() < 0.54 ? '#61edff' : '#ff9ee4';
+          drawDot(g, x, y, size, color, alpha);
+        }
+        g.globalAlpha = 1;
+
+        return c;
+      }
+
+      function buildWaveDotLayer() {
+        const cacheW = WIDTH * 2;
+        const cacheH = HEIGHT;
+        const c = makeCanvas(cacheW, cacheH);
+        const g = c.getContext('2d', { alpha: true });
+
+        // Animated dotted bands: dots, not lines.
+        for (let band = 0; band < 6; band++) {
+          const color = band % 2 === 0 ? '#d4f8ff' : '#ffb2ea';
+          const step = band % 2 === 0 ? 6 : 7;
+          for (let x = -20; x <= cacheW + 20; x += step) {
+            const y =
+              cacheH * (0.16 + band * 0.12) +
+              Math.sin(x * (0.012 + band * 0.003) + band * 1.7) * (12 + band * 3.4) +
+              Math.sin(x * 0.041 + band * 0.9) * 5;
+            const size = band % 3 === 0 ? 2 : 1;
+            const a = 0.05 + band * 0.018;
+            drawDot(g, x, y, size, color, a);
+            if (band % 2 === 0 && ((x / step) % 3 === 0)) {
+              drawDot(g, x + 2, y + 2, 1, color, a * 0.7);
+            }
+          }
+        }
+        g.globalAlpha = 1;
+        return c;
+      }
+
+      function initSpDotBackground() {
+        if (spDotBg.initialized && spDotBg.lastW === WIDTH && spDotBg.lastH === HEIGHT) return;
+        const rand = createSeededRandom(spDotBg.seed + WIDTH * 13 + HEIGHT * 17);
+        spDotBg.staticLayer = buildStaticLayer(rand);
+        spDotBg.waveLayer = buildWaveDotLayer();
+        spDotBg.initialized = true;
+        spDotBg.lastW = WIDTH;
+        spDotBg.lastH = HEIGHT;
+      }
+
+      function drawWrappedImage(image, shift) {
+        const imgW = image.width;
+        let sx = ((shift % imgW) + imgW) % imgW;
+        let remaining = WIDTH;
+        let dx = 0;
+        while (remaining > 0) {
+          const sw = Math.min(imgW - sx, remaining);
+          ctx.drawImage(image, sx, 0, sw, image.height, dx, 0, sw, HEIGHT);
+          remaining -= sw;
+          dx += sw;
+          sx = 0;
+        }
       }
 
       drawBackground = function drawBackground() {
-        initSpHexBackground();
+        initSpDotBackground();
 
         const t = performance.now() * 0.001;
+        const normalizedAngle = ((player.angle % (Math.PI * 2)) + Math.PI * 2) % (Math.PI * 2);
+        const angleShift = (normalizedAngle / (Math.PI * 2)) * WIDTH;
 
         const bg = ctx.createLinearGradient(0, 0, 0, HEIGHT);
-        bg.addColorStop(0, "#180914");
-        bg.addColorStop(0.50, "#2a1030");
-        bg.addColorStop(1, "#160914");
+        bg.addColorStop(0, '#040312');
+        bg.addColorStop(0.50, '#0d0a22');
+        bg.addColorStop(1, '#02030a');
         ctx.fillStyle = bg;
         ctx.fillRect(0, 0, WIDTH, HEIGHT);
 
-        const softGlow = ctx.createRadialGradient(WIDTH * 0.5, HEIGHT * 0.58, 0, WIDTH * 0.5, HEIGHT * 0.58, WIDTH * 0.66);
-        softGlow.addColorStop(0, "rgba(255, 170, 235, 0.10)");
-        softGlow.addColorStop(0.60, "rgba(160, 70, 140, 0.03)");
-        softGlow.addColorStop(1, "rgba(0, 0, 0, 0)");
-        ctx.fillStyle = softGlow;
+        ctx.imageSmoothingEnabled = false;
+
+        const mainShift = angleShift + t * 7.2;
+        ctx.globalAlpha = 0.98;
+        ctx.globalCompositeOperation = 'source-over';
+        drawWrappedImage(spDotBg.staticLayer, mainShift);
+
+        // second pass gives depth without recalculating geometry
+        ctx.globalAlpha = 0.18 + Math.sin(t * 0.52) * 0.04;
+        drawWrappedImage(spDotBg.staticLayer, mainShift + WIDTH * 0.25);
+
+        ctx.globalCompositeOperation = 'lighter';
+        ctx.globalAlpha = 0.28 + Math.sin(t * 0.92) * 0.05;
+        drawWrappedImage(spDotBg.waveLayer, angleShift - t * 18.0);
+
+        ctx.globalCompositeOperation = 'source-over';
+        const vignette = ctx.createRadialGradient(WIDTH * 0.5, HEIGHT * 0.5, WIDTH * 0.20, WIDTH * 0.5, HEIGHT * 0.5, WIDTH * 0.68);
+        vignette.addColorStop(0, 'rgba(0,0,0,0)');
+        vignette.addColorStop(1, 'rgba(0,0,0,0.34)');
+        ctx.globalAlpha = 1;
+        ctx.fillStyle = vignette;
         ctx.fillRect(0, 0, WIDTH, HEIGHT);
 
-        drawSpStars(t);
-
-        const floorShade = ctx.createLinearGradient(0, HEIGHT * 0.66, 0, HEIGHT);
-        floorShade.addColorStop(0, "rgba(255, 170, 235, 0.00)");
-        floorShade.addColorStop(1, "rgba(90, 32, 78, 0.12)");
-        ctx.fillStyle = floorShade;
-        ctx.fillRect(0, HEIGHT * 0.66, WIDTH, HEIGHT * 0.34);
-
-        drawSpHexSurface(t);
+        ctx.imageSmoothingEnabled = true;
       };
     })();
 
