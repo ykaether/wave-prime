@@ -1,21 +1,11 @@
 <!DOCTYPE html>
 <html lang="ja">
 <head>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover" />
-  <meta name="apple-mobile-web-app-capable" content="yes" />
-  <meta name="mobile-web-app-capable" content="yes" />
-  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
-  <title>Wave-Prime</title>
+  <title>Metroid Prime Lite</title>
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; }
-    html {
-      width: 100%;
-      height: 100%;
-      overflow: hidden;
-      overscroll-behavior: none;
-      touch-action: none;
-    }
     body {
       min-height: 100vh;
       display: flex;
@@ -26,9 +16,6 @@
         radial-gradient(circle at top, #17325e 0%, #060913 54%, #010207 100%);
       font-family: monospace;
       color: #9ffbf5;
-      overflow: hidden;
-      overscroll-behavior: none;
-      touch-action: none;
     }
     canvas {
       border: 2px solid #42ecff;
@@ -38,1188 +25,24 @@
         0 0 42px rgba(255, 92, 194, 0.14);
     }
     #hud {
-      display: none;
-    }
-    #mobileDock {
-      position: fixed;
-      left: 0;
-      right: 0;
-      bottom: 0;
-      display: none;
-      z-index: 30;
-      overflow: hidden;
-      background:
-        linear-gradient(180deg, rgba(3,10,18,0.06) 0%, rgba(4,10,18,0.62) 24%, rgba(3,8,16,0.96) 100%);
-      border-top: 1px solid rgba(66,236,255,0.16);
-      backdrop-filter: blur(6px);
-      touch-action: none;
-      user-select: none;
-      -webkit-user-select: none;
-      -webkit-touch-callout: none;
-    }
-    #mobileDock.visible { display: block; }
-    .dock-pad {
-      position: absolute;
-      border-radius: 50%;
-      border: 2px solid rgba(66,236,255,0.42);
-      background: radial-gradient(circle, rgba(66,236,255,0.08) 0%, rgba(11,18,28,0.3) 55%, rgba(5,10,18,0.58) 100%);
-      box-shadow: 0 0 16px rgba(66,236,255,0.18);
-      touch-action: none;
-    }
-    .dock-knob {
-      position: absolute;
-      border-radius: 50%;
-      background: radial-gradient(circle, rgba(255,255,255,0.9) 0%, rgba(120,255,248,0.85) 56%, rgba(42,120,150,0.95) 100%);
-      box-shadow: 0 0 16px rgba(150,255,255,0.42);
-      pointer-events: none;
-      transform: translate(0px, 0px);
-    }
-    .dock-pad-label {
-      position: absolute;
-      width: 100%;
-      text-align: center;
-      top: -28px;
-      color: rgba(180,248,255,0.9);
+      margin-top: 10px;
       font-size: 12px;
-      letter-spacing: 1px;
-      pointer-events: none;
-    }
-    .dock-btn {
-      position: absolute;
-      border-radius: 50%;
-      border: 2px solid rgba(66,236,255,0.36);
-      background: radial-gradient(circle, rgba(52,84,130,0.8) 0%, rgba(10,16,26,0.94) 72%);
-      color: #cffffa;
-      font: 700 14px/1 monospace;
-      box-shadow: 0 0 14px rgba(66,236,255,0.16);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      touch-action: none;
-      user-select: none;
-      -webkit-user-select: none;
-    }
-    .dock-btn.active {
-      transform: scale(0.96);
-      box-shadow: 0 0 22px rgba(120,255,255,0.34);
-      border-color: rgba(120,255,255,0.72);
-    }
-    #rotateHint {
-      position: fixed;
-      left: 50%;
-      transform: translateX(-50%);
-      z-index: 45;
-      display: none;
-      pointer-events: none;
-      opacity: 0;
-      transition: opacity 220ms ease;
-    }
-    #rotateHint.visible {
-      display: block;
-      opacity: 1;
-    }
-    #rotateHintCard {
-      min-width: 204px;
-      max-width: min(76vw, 290px);
-      padding: 10px 14px 12px;
-      border-radius: 14px;
-      border: 1px solid rgba(255, 210, 120, 0.34);
-      background: linear-gradient(180deg, rgba(7, 12, 20, 0.76) 0%, rgba(4, 8, 16, 0.92) 100%);
-      box-shadow: 0 8px 24px rgba(0,0,0,0.28), 0 0 18px rgba(255, 196, 92, 0.14);
-      backdrop-filter: blur(8px);
-      text-align: center;
-    }
-    #rotateHintIcon {
-      font-size: 26px;
-      line-height: 1;
-      color: rgba(255, 231, 180, 0.95);
-      margin-bottom: 6px;
-      text-shadow: 0 0 12px rgba(255, 193, 90, 0.22);
-    }
-    #rotateHintTitle {
-      color: rgba(255, 236, 196, 0.96);
-      font: 700 13px/1.25 monospace;
-      letter-spacing: 0.4px;
-      margin-bottom: 4px;
-    }
-    #rotateHintText {
-      color: rgba(235, 246, 255, 0.84);
-      font: 12px/1.35 monospace;
+      color: #98fbff;
     }
   </style>
 </head>
 <body>
   <canvas id="game" width="1280" height="720"></canvas>
   <div id="hud">PC: WASD move · Mouse look · Left Click shoot/charge · Right Click lock-on · Space jump · Shift dash · R missile · 1/2 weapon · V visor · Esc/P pause · Pro Controller supported</div>
-  <div id="mobileDock" aria-hidden="true">
-    <div id="movePad" class="dock-pad">
-      <div class="dock-pad-label">MOVE</div>
-      <div id="moveKnob" class="dock-knob"></div>
-    </div>
-    <div id="aimPad" class="dock-pad">
-      <div class="dock-pad-label">AIM</div>
-      <div id="aimKnob" class="dock-knob"></div>
-    </div>
-    <button id="dockMissile" class="dock-btn" type="button">MIS</button>
-    <button id="dockFire" class="dock-btn" type="button">FIRE</button>
-    <button id="dockDash" class="dock-btn" type="button">DSH</button>
-    <button id="dockJump" class="dock-btn" type="button">JMP</button>
-    <button id="dockPause" class="dock-btn" type="button">II</button>
-    <button id="dockFull" class="dock-btn" type="button">FULL</button>
-  </div>
-  <div id="rotateHint" aria-hidden="true">
-    <div id="rotateHintCard">
-      <div id="rotateHintIcon">⤾</div>
-      <div id="rotateHintTitle">Landscape Recommended</div>
-      <div id="rotateHintText">Rotate your phone for a smoother, more comfortable control layout.</div>
-    </div>
-  </div>
 
   <script>
     const canvas = document.getElementById('game');
     const ctx = canvas.getContext('2d');
-    const mobileDock = document.getElementById('mobileDock');
-    const movePadEl = document.getElementById('movePad');
-    const moveKnobEl = document.getElementById('moveKnob');
-    const aimPadEl = document.getElementById('aimPad');
-    const aimKnobEl = document.getElementById('aimKnob');
-    const dockMissileEl = document.getElementById('dockMissile');
-    const dockFireEl = document.getElementById('dockFire');
-    const dockDashEl = document.getElementById('dockDash');
-    const dockJumpEl = document.getElementById('dockJump');
-    const dockPauseEl = document.getElementById('dockPause');
-    const dockFullEl = document.getElementById('dockFull');
-    const rotateHintEl = document.getElementById('rotateHint');
-        // ===== Minimal Mobile Touch Controls =====
-    // Adds: left joystick, right-side aim swipe, FIRE button, PAUSE button.
-    // Designed to reuse existing keyboard/game logic as much as possible.
-
-    function isTouchDevice() {
-      return ("ontouchstart" in window) || navigator.maxTouchPoints > 0;
-    }
-
-    function isPortraitStackedMode() {
-      return isTouchDevice() && window.innerHeight > window.innerWidth;
-    }
-
-    function hasActiveTouchId(id) {
-      return id !== null && id !== undefined;
-    }
-
-    let rotateHintTimer = null;
-    let rotateHintDismissed = false;
-
-    function hideRotateHint() {
-      if (!rotateHintEl) return;
-      rotateHintEl.classList.remove("visible");
-    }
-
-    function showRotateHintTemporarily() {
-      if (!rotateHintEl || rotateHintDismissed || !isPortraitStackedMode()) return;
-      rotateHintEl.classList.add("visible");
-      if (rotateHintTimer) clearTimeout(rotateHintTimer);
-      rotateHintTimer = setTimeout(() => {
-        hideRotateHint();
-        rotateHintDismissed = true;
-      }, 5200);
-    }
-
-    function updateRotateHintPosition(topAreaH, dockTop) {
-      if (!rotateHintEl) return;
-      const hintTop = Math.max(12, Math.round(dockTop - 96));
-      rotateHintEl.style.top = `${hintTop}px`;
-    }
-
-    function fitCanvasToViewport() {
-      if (typeof canvas === "undefined") return;
-
-      const viewportW = window.visualViewport?.width || window.innerWidth;
-      const viewportH = window.visualViewport?.height || window.innerHeight;
-      const viewportOffsetLeft = window.visualViewport?.offsetLeft || 0;
-      const viewportOffsetTop = window.visualViewport?.offsetTop || 0;
-      const portraitStacked = isPortraitStackedMode();
-      const dockHeight = portraitStacked ? Math.round(viewportH * 0.5) : 0;
-      const topAreaH = portraitStacked ? (viewportH - dockHeight) : viewportH;
-      const safeScale = portraitStacked ? 0.985 : 0.96;
-      const scale = Math.min(viewportW / WIDTH, topAreaH / HEIGHT) * safeScale;
-      const centerY = portraitStacked
-        ? viewportOffsetTop + topAreaH / 2
-        : viewportOffsetTop + viewportH / 2;
-
-      canvas.style.position = "fixed";
-      canvas.style.left = `${viewportOffsetLeft + viewportW / 2}px`;
-      canvas.style.top = `${centerY}px`;
-      canvas.style.width = `${WIDTH * scale}px`;
-      canvas.style.height = `${HEIGHT * scale}px`;
-      canvas.style.transform = "translate(-50%, -50%)";
-      canvas.style.transformOrigin = "center center";
-      canvas.style.margin = "0";
-      canvas.style.display = "block";
-      canvas.style.touchAction = "none";
-      canvas.style.maxWidth = "96vw";
-      canvas.style.maxHeight = portraitStacked ? `${topAreaH}px` : "96vh";
-
-      document.documentElement.style.margin = "0";
-      document.documentElement.style.padding = "0";
-      document.documentElement.style.overflow = "hidden";
-      document.documentElement.style.width = "100%";
-      document.documentElement.style.height = "100%";
-      document.documentElement.style.touchAction = "none";
-      document.body.style.margin = "0";
-      document.body.style.padding = "0";
-      document.body.style.overflow = "hidden";
-      document.body.style.width = "100%";
-      document.body.style.height = "100%";
-      document.body.style.background = "#000";
-      document.body.style.touchAction = "none";
-      if (mobileDock) {
-        mobileDock.classList.toggle("visible", portraitStacked);
-        if (portraitStacked) {
-          const dockTop = viewportOffsetTop + topAreaH;
-          mobileDock.style.top = `${dockTop}px`;
-          mobileDock.style.height = `${dockHeight}px`;
-          mobileDock.style.bottom = "auto";
-          layoutPortraitDockFromLandscape();
-          updateRotateHintPosition(topAreaH, dockTop);
-          showRotateHintTemporarily();
-        } else {
-          mobileDock.style.top = "";
-          mobileDock.style.height = "";
-          mobileDock.style.bottom = "";
-          hideRotateHint();
-          rotateHintDismissed = false;
-        }
-      }
-      window.scrollTo(0, 0);
-    }
-
-    function enableViewportFit() {
-      window.addEventListener("resize", fitCanvasToViewport);
-      window.addEventListener("orientationchange", () => {
-        setTimeout(fitCanvasToViewport, 250);
-      });
-      window.visualViewport?.addEventListener("resize", fitCanvasToViewport);
-      window.visualViewport?.addEventListener("scroll", fitCanvasToViewport);
-      fitCanvasToViewport();
-      setTimeout(() => window.scrollTo(0, 1), 120);
-      setTimeout(() => window.scrollTo(0, 1), 420);
-    }
-
-      function isMobileFullscreenActive() {
-        return !!(document.fullscreenElement || document.webkitFullscreenElement || document.msFullscreenElement);
-      }
-
-      function getMobileFullscreenLabel() {
-        return isMobileFullscreenActive() ? "MIN" : "FULL";
-      }
-
-      function syncMobileFullscreenLabel() {
-        const label = getMobileFullscreenLabel();
-        mobileTouch.fullscreenButton.label = label;
-        if (dockFullEl) dockFullEl.textContent = label;
-      }
-
-      async function requestMobileFullscreen() {
-        const target = document.documentElement;
-      
-        try {
-          if (isMobileFullscreenActive()) {
-            const exit =
-              document.exitFullscreen ||
-              document.webkitExitFullscreen ||
-              document.msExitFullscreen;
-      
-            if (exit) {
-              await exit.call(document);
-            }
-            syncMobileFullscreenLabel();
-            return;
-          }
-
-          const request =
-            target.requestFullscreen ||
-            target.webkitRequestFullscreen ||
-            target.msRequestFullscreen;
-      
-          if (request) {
-            await request.call(target);
-          }
-        } catch (err) {
-          console.warn("Fullscreen toggle failed:", err);
-        }
-      
-        syncMobileFullscreenLabel();
-
-        try {
-          if (isMobileFullscreenActive() && screen.orientation && screen.orientation.lock) {
-            await screen.orientation.lock(isPortraitStackedMode() ? "portrait" : "landscape");
-          }
-        } catch (_) {
-          // Some mobile browsers block orientation lock. Ignore safely.
-        }
-      }
-
-      document.addEventListener("fullscreenchange", syncMobileFullscreenLabel);
-      document.addEventListener("webkitfullscreenchange", syncMobileFullscreenLabel);
-
-
-    const TOUCH_CONTROLS_ENABLED = true;
-    const MOBILE_MOVE_MULT = 2.25;
-    const MOBILE_AIM_SENSITIVITY_MULT = 0.65;
-    const MOBILE_AIM_PITCH_LIMIT_MULT = 0.25;
-
-    const mobileTouch = {
-      joystickId: null,
-      fireId: null,
-
-      joyBaseX: 0,
-      joyBaseY: 0,
-      joyRadius: 64,
-      joyKnobX: 0,
-      joyKnobY: 0,
-
-      aimStickId: null,
-      aimBaseX: 0,
-      aimBaseY: 0,
-      aimRadius: 54,
-      aimKnobX: 0,
-      aimKnobY: 0,
-      aimAxisX: 0,
-      aimAxisY: 0,
-      fireHeld: false,
-      fireButton: { x: 0, y: 0, r: 48, label: "FIRE" },
-      missileButton: { x: 0, y: 0, r: 34, label: "MIS" },
-      dashButton: { x: 0, y: 0, r: 34, label: "DSH" },
-      jumpButton: { x: 0, y: 0, r: 34, label: "JMP" },
-      pauseButton: { x: 0, y: 0, r: 34, label: "II" },
-      fullscreenButton: { x: 0, y: 0, r: 34, label: "FULL" },
-    };
-
-    function isTouchControlsVisible() {
-      if (!TOUCH_CONTROLS_ENABLED) return false;
-      if (typeof gameStarted !== "undefined" && !gameStarted) return false;
-      if (typeof gamePaused !== "undefined" && gamePaused) return false;
-      if (typeof gameOver !== "undefined" && gameOver) return false;
-
-      return isTouchDevice();
-    }
-
-    function layoutTouchControls() {
-      const isPortrait = isPortraitStackedMode();
-      mobileTouch.isPortrait = isPortrait;
-      
-      if (isPortrait) {
-        layoutPortraitDockFromLandscape();
-        return;
-      }
-      const stickInsetX = WIDTH * 0.18;
-      const stickCenterY = HEIGHT * 0.5;
-      const ringOffset = 116;
-
-      mobileTouch.joyBaseX = stickInsetX;
-      mobileTouch.joyBaseY = stickCenterY;
-
-      if (!hasActiveTouchId(mobileTouch.joystickId)) {
-        mobileTouch.joyKnobX = mobileTouch.joyBaseX;
-        mobileTouch.joyKnobY = mobileTouch.joyBaseY;
-      }
-
-      mobileTouch.aimBaseX = WIDTH - stickInsetX;
-      mobileTouch.aimBaseY = stickCenterY;
-
-      mobileTouch.fireButton.x = mobileTouch.aimBaseX + ringOffset;
-      mobileTouch.fireButton.y = mobileTouch.aimBaseY - ringOffset;
-      mobileTouch.fireButton.label = "FIRE";
-
-      mobileTouch.missileButton.x = mobileTouch.aimBaseX - ringOffset;
-      mobileTouch.missileButton.y = mobileTouch.aimBaseY - ringOffset;
-      mobileTouch.missileButton.label = "MIS";
-      mobileTouch.dashButton.x = mobileTouch.aimBaseX - ringOffset;
-      mobileTouch.dashButton.y = mobileTouch.aimBaseY + ringOffset;
-      mobileTouch.dashButton.label = "DSH";
-      mobileTouch.jumpButton.x = mobileTouch.aimBaseX + ringOffset;
-      mobileTouch.jumpButton.y = mobileTouch.aimBaseY + ringOffset;
-      mobileTouch.jumpButton.label = "JMP";
-
-      // Landscape fullscreen UI:
-      // - MIN goes top-left.
-      // - PAUSE sits near the top-right but shifted left to line up with JMP.
-      mobileTouch.fullscreenButton.x = 48;
-      mobileTouch.fullscreenButton.y = 48;
-      mobileTouch.fullscreenButton.label = getMobileFullscreenLabel();
-      mobileTouch.pauseButton.x = mobileTouch.jumpButton.x;
-      mobileTouch.pauseButton.y = 48;
-      mobileTouch.pauseButton.label = "II";
-
-      if (!hasActiveTouchId(mobileTouch.aimStickId)) {
-        mobileTouch.aimKnobX = mobileTouch.aimBaseX;
-        mobileTouch.aimKnobY = mobileTouch.aimBaseY;
-      }
-    }
-
-    function setDockElementBox(el, cx, cy, size) {
-      if (!el) return;
-      el.style.width = `${size}px`;
-      el.style.height = `${size}px`;
-      el.style.left = `${cx - size / 2}px`;
-      el.style.top = `${cy - size / 2}px`;
-    }
-
-    function layoutPortraitDockFromLandscape() {
-      if (!mobileDock || !isPortraitStackedMode()) return;
-
-      const rect = mobileDock.getBoundingClientRect();
-      const panelW = rect.width || window.innerWidth;
-      const panelH = rect.height || Math.round(window.innerHeight * 0.5);
-
-      // Portrait target:
-      // - Raise the whole control cluster upward.
-      // - Keep the entire right-side cluster cleanly inside the visible right area.
-      // - Prevent any buttons from clipping at the screen edge.
-      const edgeInset = Math.max(18, panelW * 0.045);
-      const utilitySize = Math.min(66, Math.max(54, panelW * 0.145));
-      const padSize = Math.min(126, Math.max(100, panelW * 0.27));
-      const aimSize = padSize;
-      const knobSize = Math.round(50 * (padSize / 126));
-      const buttonSize = Math.min(58, Math.max(48, panelW * 0.125));
-      const buttonFireSize = buttonSize;
-      const buttonRadiusPx = buttonSize / 2;
-      const aimRadiusPx = aimSize / 2;
-
-      const utilityY = Math.max(utilitySize / 2 + 6, panelH * 0.085);
-      const centerY = panelH * 0.40;
-      const aimY = centerY + 8;
-      const joyY = centerY + 12;
-
-      const ringOffsetX = aimRadiusPx + buttonRadiusPx - 12;
-      const ringOffsetY = aimRadiusPx + buttonRadiusPx - 12;
-      const topButtonY = aimY - ringOffsetY;
-      const bottomButtonY = aimY + ringOffsetY;
-
-      // Left-side move pad kept within left half.
-      const joyX = Math.max(edgeInset + padSize / 2, panelW * 0.22);
-
-      // Right-side cluster fully contained in the visible right half.
-      const minAimX = panelW * 0.5 + ringOffsetX + buttonRadiusPx + 10;
-      const maxAimX = panelW - edgeInset - ringOffsetX - buttonRadiusPx;
-      const targetAimX = panelW * 0.73;
-      const aimX = Math.max(minAimX, Math.min(maxAimX, targetAimX));
-
-      mobileTouch.joyBaseX = WIDTH * 0.18;
-      mobileTouch.joyBaseY = HEIGHT * 0.5;
-      mobileTouch.aimBaseX = WIDTH - WIDTH * 0.18;
-      mobileTouch.aimBaseY = HEIGHT * 0.5;
-      mobileTouch.joyRadius = 78;
-      mobileTouch.aimRadius = 78;
-
-      if (dockFullEl) {
-        dockFullEl.style.display = "flex";
-      }
-
-      // MIN on top-left, PAUSE on top-right.
-      setDockElementBox(dockFullEl, edgeInset + utilitySize / 2, utilityY, utilitySize);
-      setDockElementBox(dockPauseEl, panelW - edgeInset - utilitySize / 2, utilityY, utilitySize);
-
-      setDockElementBox(movePadEl, joyX, joyY, padSize);
-      setDockElementBox(aimPadEl, aimX, aimY, aimSize);
-      setDockElementBox(dockMissileEl, aimX - ringOffsetX, topButtonY, buttonSize);
-      setDockElementBox(dockFireEl, aimX + ringOffsetX, topButtonY, buttonFireSize);
-      setDockElementBox(dockDashEl, aimX - ringOffsetX, bottomButtonY, buttonSize);
-      setDockElementBox(dockJumpEl, aimX + ringOffsetX, bottomButtonY, buttonSize);
-
-      if (moveKnobEl) {
-        moveKnobEl.style.width = `${knobSize}px`;
-        moveKnobEl.style.height = `${knobSize}px`;
-        moveKnobEl.style.left = `${(padSize - knobSize) / 2}px`;
-        moveKnobEl.style.top = `${(padSize - knobSize) / 2}px`;
-      }
-      if (aimKnobEl) {
-        aimKnobEl.style.width = `${knobSize}px`;
-        aimKnobEl.style.height = `${knobSize}px`;
-        aimKnobEl.style.left = `${(aimSize - knobSize) / 2}px`;
-        aimKnobEl.style.top = `${(aimSize - knobSize) / 2}px`;
-      }
-
-      mobileTouch.fireButton.label = "FIRE";
-      mobileTouch.missileButton.label = "MIS";
-      mobileTouch.dashButton.label = "DSH";
-      mobileTouch.jumpButton.label = "JMP";
-      mobileTouch.pauseButton.label = "II";
-      mobileTouch.fullscreenButton.label = getMobileFullscreenLabel();
-    }
-
-    function pointInCircle(px, py, cx, cy, r) {
-      const dx = px - cx;
-      const dy = py - cy;
-      return dx * dx + dy * dy <= r * r;
-    }
-
-    function pointInButton(px, py, btn, extra = 14) {
-      return pointInCircle(px, py, btn.x, btn.y, btn.r + extra);
-    }
-
-    function getCanvasPointerPos(e) {
-      const rect = canvas.getBoundingClientRect();
-      return {
-        x: (e.clientX - rect.left) * (WIDTH / rect.width),
-        y: (e.clientY - rect.top) * (HEIGHT / rect.height),
-      };
-    }
-
-    function getCanvasTouchPos(clientX, clientY) {
-      const rect = canvas.getBoundingClientRect();
-      return {
-        x: (clientX - rect.left) * (WIDTH / rect.width),
-        y: (clientY - rect.top) * (HEIGHT / rect.height),
-      };
-    }
-
-    function resetTouchMoveKeys() {
-      if (typeof keys === "undefined") return;
-
-      keys["KeyW"] = false;
-      keys["KeyA"] = false;
-      keys["KeyS"] = false;
-      keys["KeyD"] = false;
-      keys._touchMoveActive = false;
-    }
-
-    function updateAimJoystick(px, py) {
-      const dx = px - mobileTouch.aimBaseX;
-      const dy = py - mobileTouch.aimBaseY;
-      const dist = Math.hypot(dx, dy) || 1;
-      const maxR = mobileTouch.aimRadius || 54;
-    
-      const clampedDist = Math.min(dist, maxR);
-      const nx = dx / dist;
-      const ny = dy / dist;
-    
-      // visual knob position
-      mobileTouch.aimKnobX = mobileTouch.aimBaseX + nx * clampedDist;
-      mobileTouch.aimKnobY = mobileTouch.aimBaseY + ny * clampedDist;
-    
-      // camera control axis
-      mobileTouch.aimAxisX = Math.max(-1, Math.min(1, dx / maxR));
-      mobileTouch.aimAxisY = Math.max(-1, Math.min(1, dy / maxR));
-    }
-
-    function releaseAimJoystick() {
-      mobileTouch.aimStickId = null;
-      mobileTouch.aimKnobX = mobileTouch.aimBaseX;
-      mobileTouch.aimKnobY = mobileTouch.aimBaseY;
-      mobileTouch.aimAxisX = 0;
-      mobileTouch.aimAxisY = 0;
-      mobileTouch.aimLastX = null;
-      mobileTouch.aimLastY = null;
-      mobileTouch.aimLastClientX = null;
-      mobileTouch.aimLastClientY = null;
-    }
-
-    function releaseTouchFire() {
-      mobileTouch.fireId = null;
-      mobileTouch.fireHeld = false;
-    }
-
-    function updateTouchAimFromStick() {
-      if (typeof player === "undefined") return;
-      if (!hasActiveTouchId(mobileTouch.aimStickId)) return;
-      if (isPortraitStackedMode()) return;
-
-      const deadzone = 0.08;
-      const turnSensitivity = 0.040 * MOBILE_AIM_SENSITIVITY_MULT;
-      const pitchSensitivity = 0.024 * MOBILE_AIM_SENSITIVITY_MULT;
-      const rawX = mobileTouch.aimAxisX;
-      const rawY = mobileTouch.aimAxisY;
-      const mag = Math.hypot(rawX, rawY);
-      if (mag <= deadzone) return;
-      const scaledMag = (mag - deadzone) / (1 - deadzone);
-      const nx = rawX / mag;
-      const ny = rawY / mag;
-      const aimX = nx * scaledMag;
-      const aimY = ny * scaledMag;
-
-      if ("angle" in player) {
-        player.angle -= aimX * turnSensitivity;
-      }
-
-      if ("pitch" in player) {
-        player.pitch -= aimY * pitchSensitivity;
-        player.pitch = Math.max(-MAX_PITCH * MOBILE_AIM_PITCH_LIMIT_MULT, Math.min(MAX_PITCH * MOBILE_AIM_PITCH_LIMIT_MULT, player.pitch));
-      }
-    }
-    function updateTouchJoystick(px, py) {
-      const dx = px - mobileTouch.joyBaseX;
-      const dy = py - mobileTouch.joyBaseY;
-      const dist = Math.hypot(dx, dy) || 1;
-      const maxR = mobileTouch.joyRadius;
-
-      const clampedDist = Math.min(dist, maxR);
-      const nx = dx / dist;
-      const ny = dy / dist;
-
-      mobileTouch.joyKnobX = mobileTouch.joyBaseX + nx * clampedDist;
-      mobileTouch.joyKnobY = mobileTouch.joyBaseY + ny * clampedDist;
-
-      resetTouchMoveKeys();
-
-      if (typeof keys === "undefined") return;
-
-      const threshold = 0.22;
-      const inputX = dx / maxR;
-      const inputY = dy / maxR;
-
-      const touchMoveActive = Math.abs(inputX) > threshold || Math.abs(inputY) > threshold;
-      keys._touchMoveActive = touchMoveActive;
-
-      if (inputY < -threshold) keys["KeyW"] = true;
-      if (inputY > threshold) keys["KeyS"] = true;
-      if (inputX < -threshold) keys["KeyA"] = true;
-      if (inputX > threshold) keys["KeyD"] = true;
-    }
-
-    function releaseTouchJoystick() {
-      mobileTouch.joystickId = null;
-      mobileTouch.joyKnobX = mobileTouch.joyBaseX;
-      mobileTouch.joyKnobY = mobileTouch.joyBaseY;
-      resetTouchMoveKeys();
-    }
-
-    function touchPause() {
-      if (typeof openPauseMenu === "function") {
-        openPauseMenu();
-        return;
-      }
-
-      if (typeof gamePaused !== "undefined") {
-        gamePaused = true;
-      }
-    }
-
-    function handleTouchPauseMenuTap(px, py) {
-      if (!gamePaused) return false;
-
-      const panelW = WIDTH * 0.46;
-      const panelH = HEIGHT * 0.58;
-      const panelX = (WIDTH - panelW) / 2;
-      const panelY = (HEIGHT - panelH) / 2;
-      const menuY = panelY + 318;
-      const itemStep = 42;
-
-      if (px < panelX || px > panelX + panelW || py < panelY || py > panelY + panelH) {
-        closePauseMenu();
-        return true;
-      }
-
-      for (let i = 0; i < PAUSE_MENU_ITEMS.length; i++) {
-        const itemCenterY = menuY + i * itemStep;
-        if (Math.abs(py - itemCenterY) <= 22) {
-          pauseMenuSelection = i;
-          activatePauseMenuSelection();
-          return true;
-        }
-      }
-
-      const resumeHintY = panelY + panelH - 24;
-      if (Math.abs(py - resumeHintY) <= 20) {
-        closePauseMenu();
-        return true;
-      }
-
-      return true;
-    }
-
-    function updateTouchAim(dx, dy) {
-      if (typeof player === "undefined") return;
-    
-      // Horizontal aim should turn much more per swipe.
-      // Vertical aim stays calmer to avoid mobile camera instability.
-      const yawSensitivity = 0.0085 * MOBILE_AIM_SENSITIVITY_MULT;
-      const pitchSensitivity = 0.00115 * MOBILE_AIM_SENSITIVITY_MULT;
-      const pitchLimit = MAX_PITCH * MOBILE_AIM_PITCH_LIMIT_MULT;
-    
-      if (Math.abs(dx) < 1.2) dx = 0;
-      if (Math.abs(dy) < 1.2) dy = 0;
-    
-      if ("angle" in player) {
-        player.angle -= dx * yawSensitivity;
-      }
-    
-      if ("pitch" in player) {
-        player.pitch -= dy * pitchSensitivity;
-        player.pitch = Math.max(-pitchLimit, Math.min(pitchLimit, player.pitch));
-      }
-    }
-
-    function drawTouchControls() {
-      if (!isTouchControlsVisible()) return;
-      if (isPortraitStackedMode()) return;
-
-      layoutTouchControls();
-
-      ctx.save();
-
-      // Joystick base
-      ctx.globalAlpha = 0.68;
-      ctx.beginPath();
-      ctx.arc(mobileTouch.joyBaseX, mobileTouch.joyBaseY, mobileTouch.joyRadius, 0, Math.PI * 2);
-      ctx.fillStyle = "rgba(20, 45, 70, 0.55)";
-      ctx.fill();
-      ctx.strokeStyle = "rgba(120, 220, 255, 0.65)";
-      ctx.lineWidth = 2;
-      ctx.stroke();
-
-      // Joystick knob
-      ctx.beginPath();
-      ctx.arc(mobileTouch.joyKnobX, mobileTouch.joyKnobY, 28, 0, Math.PI * 2);
-      ctx.fillStyle = "rgba(90, 210, 255, 0.45)";
-      ctx.fill();
-      ctx.strokeStyle = "rgba(220, 255, 255, 0.85)";
-      ctx.stroke();
-
-      // Aim joystick base
-      ctx.globalAlpha = 0.58;
-      ctx.beginPath();
-      ctx.arc(mobileTouch.aimBaseX, mobileTouch.aimBaseY, mobileTouch.aimRadius, 0, Math.PI * 2);
-      ctx.fillStyle = "rgba(35, 25, 70, 0.45)";
-      ctx.fill();
-      ctx.strokeStyle = "rgba(180, 150, 255, 0.65)";
-      ctx.lineWidth = 2;
-      ctx.stroke();
-
-      // Aim joystick knob
-      ctx.beginPath();
-      ctx.arc(mobileTouch.aimKnobX, mobileTouch.aimKnobY, 26, 0, Math.PI * 2);
-      ctx.fillStyle = "rgba(170, 130, 255, 0.45)";
-      ctx.fill();
-      ctx.strokeStyle = "rgba(235, 220, 255, 0.85)";
-      ctx.stroke();
-
-      ctx.font = "bold 12px monospace";
-      ctx.fillStyle = "rgba(235, 220, 255, 0.75)";
-      ctx.textAlign = "center";
-      ctx.textBaseline = "middle";
-      ctx.fillText("AIM", mobileTouch.aimBaseX, mobileTouch.aimBaseY - mobileTouch.aimRadius - 14);
-
-      function drawButton(btn) {
-        ctx.beginPath();
-        ctx.arc(btn.x, btn.y, btn.r, 0, Math.PI * 2);
-        ctx.fillStyle = "rgba(18, 38, 58, 0.72)";
-        ctx.fill();
-        ctx.strokeStyle = "rgba(150, 230, 255, 0.80)";
-        ctx.lineWidth = 2;
-        ctx.stroke();
-
-        ctx.font = btn.r > 40 ? "bold 15px monospace" : "bold 13px monospace";
-        ctx.fillStyle = "rgba(235, 255, 255, 0.92)";
-        ctx.textAlign = "center";
-        ctx.textBaseline = "middle";
-        ctx.fillText(btn.label, btn.x, btn.y);
-      }
-
-      drawButton(mobileTouch.fireButton);
-      drawButton(mobileTouch.missileButton);
-      drawButton(mobileTouch.dashButton);
-      drawButton(mobileTouch.jumpButton);
-      drawButton(mobileTouch.fullscreenButton);
-      drawButton(mobileTouch.pauseButton);
-
-      ctx.restore();
-    }
-
-    function handleMobileTouchStart(id, clientX, clientY) {
-      if (isPortraitStackedMode()) return false;
-      const p = getCanvasTouchPos(clientX, clientY);
-
-      if (gamePaused) {
-        return handleTouchPauseMenuTap(p.x, p.y);
-      }
-
-      if (!isTouchControlsVisible()) return false;
-
-      layoutTouchControls();
-      if (pointInButton(p.x, p.y, mobileTouch.fullscreenButton, 24)) {
-        requestMobileFullscreen();
-        return true;
-      }
-      if (pointInButton(p.x, p.y, mobileTouch.pauseButton)) {
-        touchPause();
-        return true;
-      }
-
-      if (pointInButton(p.x, p.y, mobileTouch.fullscreenButton)) {
-        requestMobileFullscreen();
-        return true;
-      }
-
-      if (pointInButton(p.x, p.y, mobileTouch.fireButton, 18)) {
-        mobileTouch.fireId = id;
-        mobileTouch.fireHeld = true;
-        return true;
-      }
-
-      if (pointInButton(p.x, p.y, mobileTouch.missileButton, 18)) {
-        fireMissile();
-        return true;
-      }
-
-      if (pointInButton(p.x, p.y, mobileTouch.dashButton, 18)) {
-        dashQ = true;
-        return true;
-      }
-
-      if (pointInButton(p.x, p.y, mobileTouch.jumpButton, 18)) {
-        jumpQ = true;
-        return true;
-      }
-
-      // Left movement joystick
-      const isPortraitMoveArea =
-        mobileTouch.isPortrait &&
-        p.y >= mobileTouch.controlPanelTop &&
-        p.x < WIDTH * 0.5;
-      
-      const isLandscapeMoveArea =
-        !mobileTouch.isPortrait &&
-        p.x < WIDTH * 0.42;
-      
-      if (isPortraitMoveArea || isLandscapeMoveArea) {
-        mobileTouch.joystickId = id;
-        updateTouchJoystick(p.x, p.y);
-        return true;
-      }
-      
-      // Right AIM joystick fallback area.
-      // All action buttons are already checked above, so anything outside the left
-      // movement area should reliably become AIM control.
-      // 上から更にアプデ入ってます
-      if (p.x >= WIDTH * 0.40) {
-        mobileTouch.aimStickId = id;
-        mobileTouch.aimLastX = p.x;
-        mobileTouch.aimLastY = p.y;
-        updateAimJoystick(p.x, p.y);
-        return true;
-      }
-      
-      return false;
-      
-      return false;
-
-      return false;
-    }
-
-    function handleMobileTouchMove(id, clientX, clientY) {
-      if (isPortraitStackedMode()) return false;
-      if (!isTouchControlsVisible()) return false;
-      const p = getCanvasTouchPos(clientX, clientY);
-
-      if (id === mobileTouch.joystickId) {
-        updateTouchJoystick(p.x, p.y);
-        return true;
-      }
-
-    if (id === mobileTouch.aimStickId) {
-      const dx = p.x - mobileTouch.aimLastX;
-      const dy = p.y - mobileTouch.aimLastY;
-    
-      updateAimJoystick(p.x, p.y);
-      updateTouchAim(dx, dy);
-    
-      mobileTouch.aimLastX = p.x;
-      mobileTouch.aimLastY = p.y;
-    
-      return true;
-    }
-
-      return false;
-    }
-
-    function handleMobileTouchEnd(id) {
-      if (isPortraitStackedMode()) return false;
-      let handled = false;
-      if (id === mobileTouch.joystickId) {
-        releaseTouchJoystick();
-        handled = true;
-      }
-      if (id === mobileTouch.aimStickId) {
-        releaseAimJoystick();
-        handled = true;
-      }
-      if (id === mobileTouch.fireId) {
-        releaseTouchFire();
-        handled = true;
-      }
-      return handled;
-    }
-
-    function setDockKnob(el, dx, dy) {
-      if (!el) return;
-      el.style.transform = `translate(${dx}px, ${dy}px)`;
-    }
-
-    function setDockButtonActive(el, active) {
-      if (!el) return;
-      el.classList.toggle("active", !!active);
-    }
-
-    function startTouchGameplayIfNeeded() {
-      if (!gameStarted && typeof startGame === "function") {
-        startGame();
-      }
-      return gameStarted && !gamePaused && !gameOver;
-    }
-
-    function bindPortraitPad(padEl, knobEl, type) {
-      if (!padEl) return;
-      let activeTouchId = null;
-
-      const reset = () => {
-        if (type === "move") {
-          releaseTouchJoystick();
-        } else {
-          releaseAimJoystick();
-          mobileTouch.aimLastClientX = null;
-          mobileTouch.aimLastClientY = null;
-        }
-        setDockKnob(knobEl, 0, 0);
-        activeTouchId = null;
-      };
-
-      const applyTouch = touch => {
-        const rect = padEl.getBoundingClientRect();
-        const cx = rect.left + rect.width / 2;
-        const cy = rect.top + rect.height / 2;
-        const radius = rect.width / 2;
-        const dx = touch.clientX - cx;
-        const dy = touch.clientY - cy;
-        const dist = Math.hypot(dx, dy) || 1;
-        const knobLimit = radius * 0.68;
-        const clamped = Math.min(dist, knobLimit);
-        const nx = dx / dist;
-        const ny = dy / dist;
-        setDockKnob(knobEl, nx * clamped, ny * clamped);
-
-        const maxR = type === "move" ? mobileTouch.joyRadius : mobileTouch.aimRadius;
-        const pseudoX = (dx / radius) * maxR;
-        const pseudoY = (dy / radius) * maxR;
-        if (type === "move") {
-          mobileTouch.joystickId = touch.identifier;
-          updateTouchJoystick(mobileTouch.joyBaseX + pseudoX, mobileTouch.joyBaseY + pseudoY);
-        } else {
-          const prevX = mobileTouch.aimLastClientX;
-          const prevY = mobileTouch.aimLastClientY;
-          mobileTouch.aimStickId = touch.identifier;
-          updateAimJoystick(mobileTouch.aimBaseX + pseudoX, mobileTouch.aimBaseY + pseudoY);
-          if (prevX !== null && prevY !== null) {
-            const canvasRect = canvas.getBoundingClientRect();
-            const scaleX = canvasRect.width ? WIDTH / canvasRect.width : 1;
-            const scaleY = canvasRect.height ? HEIGHT / canvasRect.height : 1;
-
-            // Match portrait dock aim movement to the same virtual canvas-space
-            // delta used by landscape fullscreen touch aim.
-            updateTouchAim(
-              (touch.clientX - prevX) * scaleX,
-              (touch.clientY - prevY) * scaleY
-            );
-          }
-          mobileTouch.aimLastClientX = touch.clientX;
-          mobileTouch.aimLastClientY = touch.clientY;
-        }
-      };
-
-      padEl.addEventListener("touchstart", e => {
-        if (!isPortraitStackedMode()) return;
-        if (!startTouchGameplayIfNeeded()) {
-          e.preventDefault();
-          return;
-        }
-        const touch = e.changedTouches[0];
-        if (!touch) return;
-        activeTouchId = touch.identifier;
-        applyTouch(touch);
-        e.preventDefault();
-      }, { passive: false });
-
-      padEl.addEventListener("touchmove", e => {
-        if (!isPortraitStackedMode()) return;
-        for (const touch of e.changedTouches) {
-          if (touch.identifier === activeTouchId) {
-            applyTouch(touch);
-            e.preventDefault();
-            break;
-          }
-        }
-      }, { passive: false });
-
-      const endHandler = e => {
-        for (const touch of e.changedTouches) {
-          if (touch.identifier === activeTouchId) {
-            reset();
-            e.preventDefault();
-            break;
-          }
-        }
-      };
-      padEl.addEventListener("touchend", endHandler, { passive: false });
-      padEl.addEventListener("touchcancel", endHandler, { passive: false });
-    }
-
-    function bindPortraitButton(el, onPress, onRelease = null) {
-      if (!el) return;
-      let activeTouchId = null;
-      el.addEventListener("touchstart", e => {
-        if (!isPortraitStackedMode()) return;
-        const touch = e.changedTouches[0];
-        if (!touch) return;
-        activeTouchId = touch.identifier;
-        setDockButtonActive(el, true);
-        onPress?.();
-        e.preventDefault();
-      }, { passive: false });
-
-      const endHandler = e => {
-        for (const touch of e.changedTouches) {
-          if (touch.identifier === activeTouchId) {
-            setDockButtonActive(el, false);
-            activeTouchId = null;
-            onRelease?.();
-            e.preventDefault();
-            break;
-          }
-        }
-      };
-      el.addEventListener("touchend", endHandler, { passive: false });
-      el.addEventListener("touchcancel", endHandler, { passive: false });
-    }
-
-    if (typeof canvas !== "undefined") {
-      canvas.style.touchAction = "none";
-
-      canvas.addEventListener("pointerdown", e => {
-        if (e.pointerType === "touch") return;
-        if (e.pointerType !== "touch" && navigator.maxTouchPoints <= 0) return;
-        const handled = handleMobileTouchStart(e.pointerId, e.clientX, e.clientY);
-        if (handled) {
-          try { canvas.setPointerCapture(e.pointerId); } catch (_) {}
-          e.preventDefault();
-        }
-      });
-
-      canvas.addEventListener("pointermove", e => {
-        if (e.pointerType === "touch") return;
-        const handled = handleMobileTouchMove(e.pointerId, e.clientX, e.clientY);
-        if (handled) {
-          e.preventDefault();
-        }
-      });
-
-      canvas.addEventListener("pointerup", e => {
-        if (e.pointerType === "touch") return;
-        if (handleMobileTouchEnd(e.pointerId)) {
-          e.preventDefault();
-        }
-      });
-
-      canvas.addEventListener("pointercancel", e => {
-        if (e.pointerType === "touch") return;
-        handleMobileTouchEnd(e.pointerId);
-      });
-
-      canvas.addEventListener("touchstart", e => {
-        let handled = false;
-        for (const t of e.changedTouches) {
-          handled = handleMobileTouchStart(t.identifier, t.clientX, t.clientY) || handled;
-        }
-        if (handled) e.preventDefault();
-      }, { passive: false });
-
-      canvas.addEventListener("touchmove", e => {
-        let handled = false;
-        for (const t of e.changedTouches) {
-          handled = handleMobileTouchMove(t.identifier, t.clientX, t.clientY) || handled;
-        }
-        if (handled) e.preventDefault();
-      }, { passive: false });
-
-      canvas.addEventListener("touchend", e => {
-        let handled = false;
-        for (const t of e.changedTouches) {
-          handled = handleMobileTouchEnd(t.identifier) || handled;
-        }
-        if (handled) e.preventDefault();
-      }, { passive: false });
-
-      canvas.addEventListener("touchcancel", e => {
-        let handled = false;
-        for (const t of e.changedTouches) {
-          handled = handleMobileTouchEnd(t.identifier) || handled;
-        }
-        if (handled) e.preventDefault();
-      }, { passive: false });
-    }
-
-    syncMobileFullscreenLabel();
-    bindPortraitPad(movePadEl, moveKnobEl, "move");
-    bindPortraitPad(aimPadEl, aimKnobEl, "aim");
-    bindPortraitButton(dockFireEl, () => {
-      if (!startTouchGameplayIfNeeded()) return;
-      mobileTouch.fireHeld = true;
-    }, () => { mobileTouch.fireHeld = false; });
-    bindPortraitButton(dockMissileEl, () => {
-      if (!startTouchGameplayIfNeeded()) return;
-      fireMissile();
-    });
-    bindPortraitButton(dockDashEl, () => {
-      if (!startTouchGameplayIfNeeded()) return;
-      dashQ = true;
-    });
-    bindPortraitButton(dockJumpEl, () => {
-      if (!startTouchGameplayIfNeeded()) return;
-      jumpQ = true;
-    });
-    bindPortraitButton(dockPauseEl, () => {
-      if (!gameStarted) {
-        startGame();
-        return;
-      }
-      gamePaused ? closePauseMenu() : openPauseMenu();
-    });
-    bindPortraitButton(dockFullEl, () => { requestMobileFullscreen(); });
-    if (rotateHintEl) {
-      rotateHintEl.addEventListener("pointerdown", () => {
-        rotateHintDismissed = true;
-        hideRotateHint();
-      });
-    }
     const armCannonImg = new Image();
-      armCannonImg.src =
-        location.href.includes('/Projects/job_search/') || location.href.includes('/waveprime_workspace/')
-          ? "file:///Users/yuikitagawa/Documents/metroidvania-prototype/game/ManualEdit/assets/images/arm_cannon_blue.png"
-          : "assets/images/arm_cannon_blue.png";
-    function setImageSourceWithFallback(img, paths, label = "image") {
-      let index = 0;
-      img.onerror = () => {
-        if (index < paths.length) {
-          img.src = paths[index++];
-        } else {
-          console.warn(`${label} failed to load from all candidate paths.`);
-        }
-      };
-      img.src = paths[index++];
-    }
-
+      armCannonImg.src = "assets/images/arm_cannon_blue.png";
     const enemyGirlImg = new Image();
-    setImageSourceWithFallback(enemyGirlImg, [
-      "assets/images/enemy_girl.png",
-      "enemy_girl.png",
-      "images/enemy_girl.png",
-      "../assets/images/enemy_girl.png",
-      "../images/enemy_girl.png"
-    ], "enemy_girl.png");
-    const armCannonSound = new Audio(
-      location.href.includes('/Projects/job_search/') || location.href.includes('/waveprime_workspace/')
-        ? 'file:///Users/yuikitagawa/Documents/metroidvania-prototype/game/ManualEdit/assets/sounds/arm_cannon_sound.ogg'
-        : 'ManualEdit/assets/sounds/arm_cannon_sound.ogg'
-    );
+      enemyGirlImg.src = "assets/images/enemy_girl.png";
+    const armCannonSound = new Audio('ManualEdit/assets/sounds/arm_cannon_sound.ogg');
     armCannonSound.volume = 0.7;
     const floorTileImg = new Image();
       let floorTilePattern = null;
@@ -1228,13 +51,9 @@
         floorTilePattern = ctx.createPattern(floorTileImg, 'repeat');
       };
 
-      floorTileImg.src =
-        location.href.includes('/Projects/job_search/') || location.href.includes('/waveprime_workspace/')
-          ? 'file:///Users/yuikitagawa/Documents/metroidvania-prototype/game/ManualEdit/assets/images/floor_blue_grass_tile.png'
-          : 'assets/images/floor_blue_grass_tile.png';
+      floorTileImg.src = 'assets/images/floor_blue_grass_tile.png';
     const WIDTH = canvas.width;
     const HEIGHT = canvas.height;
-    enableViewportFit();
     let visorMode = "normal"; // "normal" or "xray"
     let prevDpadLeftPressed = false;
     let prevDpadRightPressed = false;
@@ -1248,8 +67,8 @@
     const DASH_MULT = 2.3;
     const AIM_PITCH_SPEED = 0.014;
     const MAX_PITCH = 0.42;
-    const MOUSE_SENS_X = 0.0028;
-    const MOUSE_SENS_Y = 0.0022;
+    const MOUSE_SENS_X = 0.0025;
+    const MOUSE_SENS_Y = 0.0020;
     const CAMERA_EYE_HEIGHT = 1.65;
     const DEFAULT_CAMERA_PITCH = -0.09;
     const JUMP_VEL = 0.162;
@@ -1262,14 +81,13 @@
     const PLAYER_CHARGE_COOLDOWN = 22;
     const PLAYER_SHOT_FX_TIME = 20;
     const PLAYER_CHARGE_BEAM_TIME = 28;
-    const PLAYER_MISSILE_MAX_CHARGES = 5;
-    const PLAYER_MISSILE_RECHARGE_TIME = 48;
+    const PLAYER_MISSILE_COOLDOWN_MAX = 240;
     const PLAYER_MISSILE_START_SPEED = 0.055;
     const PLAYER_MISSILE_MAX_SPEED = 0.16;
     const PLAYER_MISSILE_ACCEL = 0.0045;
     const PLAYER_MISSILE_LIFE = 110;
     const PLAYER_MISSILE_DAMAGE = 3;
-    const PLAYER_MISSILE_SPLASH_RADIUS = 1;
+    const PLAYER_MISSILE_SPLASH_RADIUS = 2.1;
     const PLAYER_MISSILE_SPLASH_DAMAGE = 3;
     const LOCK_ON_RANGE = 20;
     const ENEMY_PIXEL_WAVE_BLOCK = 4;
@@ -1391,6 +209,7 @@
     let mouseShootHeld = false;
     let mouseLockHeld = false;
     let pointerLocked = false;
+    let pointerLockStatusText = "Click game screen to enable mouse control";
     let gpPrev = {};
     let debugPressedButtons = "none";
     let showDebugLabels = false;
@@ -1432,8 +251,7 @@
     let hpSettingInput = "99";
     let pauseMenuSelection = 0;
     let enemyUpdateTick = 0;
-    let playerMissileCharges = PLAYER_MISSILE_MAX_CHARGES;
-    let playerMissileRechargeTimer = 0;
+    let playerMissileCooldown = 0;
     const managedListeners = [];
     let animationFrameId = null;
     let loopStarted = false;
@@ -1467,7 +285,6 @@
     function openPauseMenu() {
       if (!gameStarted) return;
       clearMouseInputState();
-      releaseTouchFire();
       releaseGamePointerLock();
       pauseGame();
       syncHpSettingFromPlayer();
@@ -1536,19 +353,40 @@
 
     function handlePointerLockChange() {
       pointerLocked = document.pointerLockElement === canvas;
+      pointerLockStatusText = pointerLocked
+        ? "Mouse control active"
+        : "Click game screen to enable mouse control";
+      if (!pointerLocked) {
+        clearMouseInputState();
+      }
     }
 
-    function requestGamePointerLock() {
-      if (!gameStarted || gamePaused || gameOver || cleanupDone) return;
+    function handlePointerLockError() {
+      pointerLocked = false;
+      pointerLockStatusText = "Mouse control blocked. Click the game screen again.";
+      clearMouseInputState();
+    }
+
+    function requestMouseLockFromUserGesture() {
+      if (gamePaused || gameOver || cleanupDone) return;
       if (!hasPointerLock() && canvas.requestPointerLock) {
-        canvas.requestPointerLock();
+        const result = canvas.requestPointerLock();
+        if (result && typeof result.then === 'function') {
+          result.catch((err) => {
+            pointerLockStatusText = "Mouse control blocked. Click the game screen again.";
+            console.warn("Pointer lock failed:", err);
+          });
+        }
       }
     }
 
     function releaseGamePointerLock() {
       if (hasPointerLock() && document.exitPointerLock) {
         document.exitPointerLock();
+        return;
       }
+      pointerLocked = false;
+      pointerLockStatusText = "Click game screen to enable mouse control";
     }
 
     function moveStartMenuSelection(delta) {
@@ -1717,14 +555,6 @@
     }
 
     function handlePointerDown(e) {
-      if (!gameStarted) {
-        startGame();
-        if (e.target === canvas) {
-          requestGamePointerLock();
-        }
-        e.preventDefault();
-        return;
-      }
       if (gameOver) {
         restartGame();
         e.preventDefault();
@@ -1733,30 +563,21 @@
       if (gamePaused) {
         return;
       }
-      if (e.target === canvas) {
-        requestGamePointerLock();
-      }
     }
 
     function handleMouseDown(e) {
       if (!gameStarted) {
         startGame();
-        requestGamePointerLock();
-        e.preventDefault();
-        return;
       }
       if (gamePaused || gameOver || cleanupDone) return;
-      requestGamePointerLock();
+      requestMouseLockFromUserGesture();
       if (e.button === 0) {
         mouseShootHeld = true;
-        e.preventDefault();
-        return;
       }
       if (e.button === 2) {
         mouseLockHeld = true;
-        e.preventDefault();
-        return;
       }
+      e.preventDefault();
     }
 
     function handleMouseUp(e) {
@@ -1793,7 +614,7 @@
       height: 0,
       groundHeight: 0,
       vz: 0,
-      hp: 299,
+      hp: 99,
       maxHp: 99,
       dashGlow: 0,
       shootCD: 0,
@@ -1837,8 +658,7 @@
       playerMissiles.length = 0;
       missileBursts.length = 0;
       enemyUpdateTick = 0;
-      playerMissileCharges = PLAYER_MISSILE_MAX_CHARGES;
-      playerMissileRechargeTimer = 0;
+      playerMissileCooldown = 0;
       for (const e of enemies) {
         e.x = e.homeX;
         e.y = e.homeY;
@@ -1877,9 +697,6 @@
       dashHeld = false;
       lockHeld = false;
       clearMouseInputState();
-      releaseTouchFire();
-      releaseTouchJoystick();
-      releaseAimJoystick();
       releaseGamePointerLock();
 
       keys["ArrowLeft"] = false;
@@ -1969,9 +786,6 @@
       removeManagedListeners();
       clearTransientGameObjects();
       clearMouseInputState();
-      releaseTouchFire();
-      releaseTouchJoystick();
-      releaseAimJoystick();
       releaseGamePointerLock();
       armCannonSound.pause();
       armCannonSound.currentTime = 0;
@@ -1988,9 +802,6 @@
     function handleVisibilityChange() {
       if (document.hidden) {
         clearMouseInputState();
-        releaseTouchFire();
-        releaseTouchJoystick();
-        releaseAimJoystick();
         stopGame();
         releaseGamePointerLock();
         armCannonSound.pause();
@@ -2017,6 +828,7 @@
       addManagedListener(document, 'mousemove', handleMouseMove);
       addManagedListener(canvas, 'contextmenu', handleContextMenu);
       addManagedListener(document, 'pointerlockchange', handlePointerLockChange);
+      addManagedListener(document, 'pointerlockerror', handlePointerLockError);
       addManagedListener(window, 'pointerdown', forceRestartIfNeeded, true);
       addManagedListener(window, 'mousedown', forceRestartIfNeeded, true);
       addManagedListener(window, 'touchstart', forceRestartIfNeeded, true);
@@ -2267,7 +1079,7 @@
         vz: 0,
         vx: 0, vy: 0,
         patrolMinX, patrolMaxX,
-        hp: 50, maxHp: 50,
+        hp: 24, maxHp: 24,
         dead: false, invTimer: 0,
         shootCD: 0, angle: 0, stationary: false,
         meleeCD: 0, meleeFx: 0,
@@ -2681,7 +1493,7 @@
     }
 
     function isShootHeld() {
-      return !!(keys.KeyX || keys.KeyY || keys._shootHeld || mouseShootHeld || mobileTouch.fireHeld);
+      return !!(keys.KeyX || keys.KeyY || keys._shootHeld || mouseShootHeld);
     }
 
     function isEnemyOverlappingAt(movingEnemy, nx, ny, padding = 0.35) {
@@ -2758,10 +1570,8 @@
       if (pillarDebugMessage.timer > 0) pillarDebugMessage.timer--;
       if (shotHitMarker && shotHitMarker.timer > 0) shotHitMarker.timer--;
       const lockActive = lockHeld || mouseLockHeld || !!keys.KeyC;
-      const dashMoveMult = (keys.ShiftLeft || keys.ShiftRight || dashHeld) ? DASH_MULT : 1;
-      const mobileMoveMult = keys._touchMoveActive ? MOBILE_MOVE_MULT : 1;
-      const moveMult = dashMoveMult * mobileMoveMult;
-      if (dashMoveMult > 1) player.dashGlow = 6;
+      const moveMult = (keys.ShiftLeft || keys.ShiftRight || dashHeld) ? DASH_MULT : 1;
+      if (moveMult > 1) player.dashGlow = 6;
 
       const lockInfo = getLockCandidate();
       player.lockTarget = lockActive ? lockInfo?.enemy || null : null;
@@ -2885,14 +1695,8 @@
         player.chargeLevel = 0;
       }
       shootQ = false;
-      if (playerMissileCharges < PLAYER_MISSILE_MAX_CHARGES) {
-        playerMissileRechargeTimer++;
-        if (playerMissileRechargeTimer >= PLAYER_MISSILE_RECHARGE_TIME) {
-          playerMissileCharges++;
-          playerMissileRechargeTimer = 0;
-        }
-      } else {
-        playerMissileRechargeTimer = 0;
+      if (playerMissileCooldown > 0) {
+        playerMissileCooldown--;
       }
       missileQ = false;
       player.wasShootHeld = shootHeldNow;
@@ -3194,8 +1998,8 @@
     }
 
     function fireMissile() {
-      if (gamePaused || gameOver || playerMissileCharges <= 0) return;
-      playerMissileCharges--;
+      if (gamePaused || gameOver || playerMissileCooldown > 0) return;
+      playerMissileCooldown = PLAYER_MISSILE_COOLDOWN_MAX;
       // Keep missile motion easy to read in the 2.5D view:
       // spawn it a bit ahead of the player and fly mostly parallel to the floor.
       const ang = player.angle;
@@ -3898,7 +2702,7 @@ ctx.fillRect(minX, minY, w, h);
       // use the existing blue grass tile image as the main surface,
       // then add only a lightweight animated tint on top.
       // This is much cheaper than fully procedural per-tile wave coloring.
-      const T = 0.4; // larger tiles = fewer projected quads
+      const T = 0.5; // larger tiles = fewer projected quads
       const px = player.x, py = player.y;
       const txMin = Math.floor((px - 20) / T);
       const txMax = Math.ceil((px + 20) / T);
@@ -4459,29 +3263,15 @@ ctx.fillRect(minX, minY, w, h);
       ctx.stroke();
 
       // ribs
-      drawPlayerHpOrbs(WIDTH / 2 - 120, 35);
-      function drawPlayerHpOrbs(x, y) {
-        const HP_PER_ORB = 100;
-      
-        const maxHp = Math.max(HP_PER_ORB, player.maxHp || HP_PER_ORB);
-        const currentHp = Math.max(0, player.hp || 0);
-      
-        // 100HP = 1 orb, 200HP = 2 orbs, 300HP = 3 orbs
-        const orbCount = Math.max(1, Math.ceil(maxHp / HP_PER_ORB));
-      
-        const r = 5;
-        const gap = 14;
-      
-        for (let i = 0; i < orbCount; i++) {
-          const hpInOrb = Math.max(
-            0,
-            Math.min(HP_PER_ORB, currentHp - i * HP_PER_ORB)
-          );
-      
-          const fillRatio = hpInOrb / HP_PER_ORB;
-      
-          drawHpOrb(x + i * gap, y, r, fillRatio);
-        }
+      for (let i = 0; i < 4; i++) {
+        const t = i / 3;
+        const y = chest.y + bodyH * (0.04 + t * 0.16);
+        const w = ribW * (1 - t * 0.12);
+
+        ctx.beginPath();
+        ctx.moveTo(chest.x - w, y);
+        ctx.quadraticCurveTo(chest.x, y + 5, chest.x + w, y);
+        ctx.stroke();
       }
 
       // front claws
@@ -5479,10 +4269,8 @@ ctx.fillRect(minX, minY, w, h);
       const hit = player.shootCD > SHOOT_CD - 2;
       ctx.strokeStyle = player.lockTarget ? '#ffd768' : (hit ? '#ffd7a0' : '#dfeadf');
       ctx.lineWidth = 2;
-      const aimReticleOffsetX = (!player.lockTarget && isTouchControlsVisible()) ? mobileTouch.aimAxisX * 46 : 0;
-      const aimReticleOffsetY = 0;
-      const cx = WIDTH / 2 + aimReticleOffsetX;
-      const cy = HEIGHT / 2 + aimReticleOffsetY;
+      const cx = WIDTH / 2;
+      const cy = HEIGHT / 2;
       const gap = 12;
       const len = hit ? 16 : 12;
       ctx.beginPath();
@@ -5625,11 +4413,10 @@ ctx.fillRect(minX, minY, w, h);
     function drawPadDebugOverlay() {
       ctx.save();
 
-      const isTouchLandscape = isTouchDevice() && !isPortraitStackedMode();
-      const boxW = isTouchLandscape ? 210 : 280;
-      const boxH = isTouchLandscape ? 36 : 46;
-      const boxX = isTouchLandscape ? (WIDTH - boxW - 14) : (WIDTH - boxW - 30);
-      const boxY = isTouchLandscape ? (HEIGHT - boxH - 8) : 24;
+      const boxX = WIDTH - 310;
+      const boxY = 24;
+      const boxW = 280;
+      const boxH = 46;
 
       ctx.fillStyle = "rgba(0, 0, 0, 0.75)";
       ctx.fillRect(boxX, boxY, boxW, boxH);
@@ -5639,10 +4426,10 @@ ctx.fillRect(minX, minY, w, h);
       ctx.strokeRect(boxX, boxY, boxW, boxH);
 
       ctx.fillStyle = "#ffffff";
-      ctx.font = isTouchLandscape ? "15px sans-serif" : "18px sans-serif";
+      ctx.font = "18px sans-serif";
       ctx.textAlign = "left";
       ctx.textBaseline = "middle";
-      ctx.fillText(`PAD Buttons: ${debugPressedButtons}`, boxX + 10, boxY + boxH / 2);
+      ctx.fillText(`PAD Buttons: ${debugPressedButtons}`, boxX + 14, boxY + boxH / 2);
 
       ctx.restore();
     }
@@ -5670,7 +4457,7 @@ ctx.fillRect(minX, minY, w, h);
       ctx.textBaseline = "middle";
       ctx.fillStyle = "#ffffff";
       ctx.font = "bold 48px sans-serif";
-      ctx.fillText("WAVE PRIME", WIDTH / 2, panelY + 70);
+      ctx.fillText("PRIME LITE", WIDTH / 2, panelY + 70);
 
       ctx.font = "22px sans-serif";
       ctx.fillStyle = "rgba(210, 235, 255, 0.92)";
@@ -5809,54 +4596,6 @@ ctx.fillRect(minX, minY, w, h);
 
       ctx.restore();
     }
-    function drawHpOrb(x, y, r, fillRatio) {
-  const fill = Math.max(0, Math.min(1, fillRatio));
-
-  ctx.save();
-
-  // outer shell
-  ctx.beginPath();
-  ctx.arc(x, y, r, 0, Math.PI * 2);
-  ctx.fillStyle = "rgba(20, 45, 65, 0.65)";
-  ctx.fill();
-  ctx.strokeStyle = "rgba(160, 230, 255, 0.85)";
-  ctx.lineWidth = 1.5;
-  ctx.stroke();
-
-  // filled amount
-  if (fill > 0) {
-    ctx.save();
-    ctx.beginPath();
-//    ctx.arc(x, y, r - 1, 0, Math.PI * 2);
-    drawPlayerHpOrbs(WIDTH / 2 - 120, 35);
-    ctx.clip();
-
-    const fillHeight = (r * 2) * fill;
-    ctx.fillStyle = "rgba(170, 235, 255, 0.95)";
-    ctx.fillRect(x - r, y + r - fillHeight, r * 2, fillHeight);
-
-    ctx.restore();
-  }
-
-  ctx.restore();
-}
-
-    function drawPlayerHpOrbs(x, y) {
-      const HP_PER_ORB = 100;
-      const maxHp = Math.max(HP_PER_ORB, player.maxHp || HP_PER_ORB);
-      const currentHp = Math.max(0, player.hp || 0);
-      const orbCount = Math.max(1, Math.ceil(maxHp / HP_PER_ORB));
-    
-      const r = 5;
-      const gap = 14;
-    
-      for (let i = 0; i < orbCount; i++) {
-        const hpInThisOrb = currentHp - i * HP_PER_ORB;
-        const fillRatio = hpInThisOrb / HP_PER_ORB;
-    
-        drawHpOrb(x + i * gap, y, r, fillRatio);
-      }
-    }
     function drawHUD() {
       ctx.fillStyle = "#ffffff";
       ctx.font = "14px sans-serif";
@@ -5886,72 +4625,57 @@ ctx.fillRect(minX, minY, w, h);
 
       ctx.fillStyle = '#efe8d2';
       ctx.font = '12px monospace';
-      ctx.fillText('WAVE PRIME', 18, 22);
+      ctx.fillText('PRIME LITE TEST', 18, 22);
       ctx.fillText(`File: v1.6`, 18, 38);
       ctx.fillText(`Active World: ${ACTIVE_WORLD}`, 18, 54);
       ctx.fillText(`Stage: ${STAGE_NAME}`, 18, 70);
       ctx.fillText(`Difficulty: ${getDifficultyConfig().label}`, 18, 86);
       ctx.fillText(`World2 Active: ${ACTIVE_WORLD === 'World2'}`, 18, 102);
       ctx.fillText(`Weapon: ${currentWeapon === 'wave' ? 'WAVE' : 'NORMAL'}`, 18, 118);
-      const missileReady = playerMissileCharges > 0;
-      const missileRechargeRate = playerMissileCharges >= PLAYER_MISSILE_MAX_CHARGES
+      const missileReady = playerMissileCooldown <= 0;
+      const missileCooldownRate = missileReady
         ? 1
-        : (playerMissileRechargeTimer / PLAYER_MISSILE_RECHARGE_TIME);
+        : 1 - (playerMissileCooldown / PLAYER_MISSILE_COOLDOWN_MAX);
+      ctx.fillStyle = missileReady ? '#dff7b1' : '#f5c97a';
+      ctx.fillText(missileReady ? 'MISSILE READY' : `MISSILE COOLING ${playerMissileCooldown}`, 18, 134);
       ctx.fillText(`ENERGY ${player.hp}`, 18, 150);
       ctx.fillText(`AIM ${Math.round((-player.pitch / MAX_PITCH) * 100)}`, 18, 166);
       const gp = [...navigator.getGamepads()].find(g => g);
       ctx.fillStyle = gp ? '#d9e7bc' : 'rgba(217,231,188,0.35)';
       ctx.fillText(gp ? `PAD ${gp.id.slice(0, 24)}` : 'PAD none', 18, 182);
+      ctx.fillStyle = pointerLocked ? '#8fffd3' : '#ffd9a8';
+      ctx.fillText(`Mouse: ${pointerLockStatusText}`, 18, 198);
 
       ctx.fillStyle = 'rgba(226,213,182,0.18)';
-      ctx.fillRect(18, 188, 180, 8);
+      ctx.fillRect(18, 206, 180, 8);
       ctx.fillStyle = '#c97e58';
-      ctx.fillRect(18, 188, 180 * (player.hp / player.maxHp), 8);
+      ctx.fillRect(18, 206, 180 * (player.hp / player.maxHp), 8);
       ctx.fillStyle = 'rgba(226,213,182,0.14)';
-      ctx.fillRect(18, 202, 180, 6);
-
-      const missileHudX = WIDTH - 184;
-      const missileHudY = 118;
-      ctx.textAlign = 'left';
-      ctx.fillStyle = '#efe8d2';
-      ctx.fillText(`MISSILE ${playerMissileCharges} / ${PLAYER_MISSILE_MAX_CHARGES}`, missileHudX, missileHudY);
-      ctx.fillStyle = 'rgba(226,213,182,0.14)';
-      ctx.fillRect(missileHudX, missileHudY + 10, 150, 6);
-      ctx.fillStyle = 'rgba(122,240,180,0.95)';
-      ctx.fillRect(missileHudX, missileHudY + 10, 150 * (playerMissileCharges / PLAYER_MISSILE_MAX_CHARGES), 6);
-      if (playerMissileCharges < PLAYER_MISSILE_MAX_CHARGES) {
-        ctx.fillStyle = 'rgba(226,213,182,0.14)';
-        ctx.fillRect(missileHudX, missileHudY + 24, 150, 4);
-        ctx.fillStyle = '#f5c97a';
-        ctx.fillRect(missileHudX, missileHudY + 24, 150 * missileRechargeRate, 4);
-        ctx.fillStyle = '#f5c97a';
-        ctx.fillText(`RECHARGE ${PLAYER_MISSILE_RECHARGE_TIME - playerMissileRechargeTimer}`, missileHudX, missileHudY + 42);
-      } else {
-        ctx.fillStyle = '#dff7b1';
-        ctx.fillText('READY', missileHudX, missileHudY + 42);
-      }
+      ctx.fillRect(18, 220, 180, 6);
+      ctx.fillStyle = missileReady ? '#7af0b4' : '#e2b45e';
+      ctx.fillRect(18, 220, 180 * missileCooldownRate, 6);
 
       ctx.fillStyle = 'rgba(239,232,210,0.78)';
-      ctx.fillText(`Labels ${showDebugLabels ? 'ON' : 'OFF'} (L)`, 18, 196);
-      ctx.fillText(`Height Guides ${showHeightGuides ? 'ON' : 'OFF'} (H)`, 18, 212);
-      ctx.fillText(`Grid ${showCoordinateGrid ? 'ON' : 'OFF'} (G)`, 18, 228);
-      if (currentPillarA && !currentPillarA.hidden) ctx.fillText(`Pillar A Segments ${PILLAR_A_SEGMENTS} · Height Axis z`, 18, 244);
-      ctx.fillText(`Pillar A visible: ${pillarAVisible ? 'YES' : 'NO'}`, 18, 260);
-      if (currentPillarA && !currentPillarA.hidden) ctx.fillText(`Pillar A cell ${currentPillarA.tileX},${currentPillarA.tileY} = ${pillarBaseCell}`, 18, 276);
-      ctx.fillText(`Player Start Cell: ${playerStartCell}`, 18, 292);
-      ctx.fillText(`Player Cell: ${playerCellLabel} (${playerCellIndices.cellX},${playerCellIndices.cellY})`, 18, 308);
-      ctx.fillText(`Player Position: ${playerCoord}`, 18, 324);
-      ctx.fillText(`Player Speed: move ${MOVE_SPEED.toFixed(3)} / strafe ${STRAFE_SPEED.toFixed(3)}`, 18, 340);
-      ctx.fillText(`Pillar_A Height: ${currentPillarA ? currentPillarA.h.toFixed(2) : 'none'} | Pillar_B Height: ${pillarB ? pillarB.h.toFixed(2) : 'none'}`, 18, 356);
-      ctx.fillText(`Target Cell: ${targetCellLabel}`, 18, 372);
-      ctx.fillText(`Target Position: ${targetCoord}`, 18, 388);
-      ctx.fillText(`Target Object: ${targetObject}`, 18, 404);
+      ctx.fillText(`Labels ${showDebugLabels ? 'ON' : 'OFF'} (L)`, 18, 214);
+      ctx.fillText(`Height Guides ${showHeightGuides ? 'ON' : 'OFF'} (H)`, 18, 230);
+      ctx.fillText(`Grid ${showCoordinateGrid ? 'ON' : 'OFF'} (G)`, 18, 246);
+      if (currentPillarA && !currentPillarA.hidden) ctx.fillText(`Pillar A Segments ${PILLAR_A_SEGMENTS} · Height Axis z`, 18, 262);
+      ctx.fillText(`Pillar A visible: ${pillarAVisible ? 'YES' : 'NO'}`, 18, 278);
+      if (currentPillarA && !currentPillarA.hidden) ctx.fillText(`Pillar A cell ${currentPillarA.tileX},${currentPillarA.tileY} = ${pillarBaseCell}`, 18, 294);
+      ctx.fillText(`Player Start Cell: ${playerStartCell}`, 18, 310);
+      ctx.fillText(`Player Cell: ${playerCellLabel} (${playerCellIndices.cellX},${playerCellIndices.cellY})`, 18, 326);
+      ctx.fillText(`Player Position: ${playerCoord}`, 18, 342);
+      ctx.fillText(`Player Speed: move ${MOVE_SPEED.toFixed(3)} / strafe ${STRAFE_SPEED.toFixed(3)}`, 18, 358);
+      ctx.fillText(`Pillar_A Height: ${currentPillarA ? currentPillarA.h.toFixed(2) : 'none'} | Pillar_B Height: ${pillarB ? pillarB.h.toFixed(2) : 'none'}`, 18, 374);
+      ctx.fillText(`Target Cell: ${targetCellLabel}`, 18, 390);
+      ctx.fillText(`Target Position: ${targetCoord}`, 18, 406);
+      ctx.fillText(`Target Object: ${targetObject}`, 18, 422);
       if (targetInfo) {
-        ctx.fillText(`Aiming at: ${targetObject} · Hit Height: ${targetInfo.height} (${targetInfo.z.toFixed(2)})`, 18, 420);
+        ctx.fillText(`Aiming at: ${targetObject} · Hit Height: ${targetInfo.height} (${targetInfo.z.toFixed(2)})`, 18, 438);
       }
       if (currentPillarA && pillarARenderState) {
         ctx.fillStyle = 'rgba(220,240,255,0.72)';
-        ctx.fillText(`Pillar_A world ${currentPillarA.x.toFixed(2)},${currentPillarA.y.toFixed(2)} | label ${Math.round((pillarARenderState.left + pillarARenderState.right)/2)},${Math.round(pillarARenderState.top - 18)}`, 18, 436);
+        ctx.fillText(`Pillar_A world ${currentPillarA.x.toFixed(2)},${currentPillarA.y.toFixed(2)} | label ${Math.round((pillarARenderState.left + pillarARenderState.right)/2)},${Math.round(pillarARenderState.top - 18)}`, 18, 454);
         ctx.fillText(`Seg1 ${Math.round(pillarARenderState.left - 16)},${Math.round(pillarARenderState.bottom - ((0.5 / PILLAR_A_SEGMENTS) * (pillarARenderState.bottom - pillarARenderState.top)))}`, 18, 452);
         ctx.fillText(`Seg12 ${Math.round(pillarARenderState.left - 16)},${Math.round(pillarARenderState.bottom - ((11.5 / PILLAR_A_SEGMENTS) * (pillarARenderState.bottom - pillarARenderState.top)))}`, 18, 468);
       }
@@ -6150,15 +4874,17 @@ ctx.fillRect(minX, minY, w, h);
         restartRequested = false;
         restartGame();
       }
-
       canvas.style.filter = visorMode === "xray" ? "grayscale(1) brightness(1.18) contrast(1.08)" : "none";
-      updateTouchAimFromStick();
       updatePlayer();
       updateEnemies();
       updateEnemyShots();
       updatePlayerMissiles();
       if (player.hp <= 0) {
         player.hp = 0;
+        if (!gameOver) {
+          clearMouseInputState();
+          releaseGamePointerLock();
+        }
         gameOver = true;
       }
       if (player.shotFx && player.shotFx.timer > 0) player.shotFx.timer--;
@@ -6202,7 +4928,6 @@ ctx.fillRect(minX, minY, w, h);
         ctx.restore();
       }
       drawHUD();
-      drawTouchControls();
       drawMinimap();
       drawGoalOrb();
       drawDamageFlash();
@@ -6232,227 +4957,238 @@ ctx.fillRect(minX, minY, w, h);
     }
 
 
-    // ===== Samurai Panorama + Floor Material Patch v3 =====
-    // Correct insertion: this runs once at startup, immediately before the main loop starts.
-    // It overrides drawBackground() and drawFloor() after both original functions already exist.
-    (function applySamuraiPanoramaWaterPatch() {
-      const panoramaImg = new Image();
-      panoramaImg.decoding = "async";
-      panoramaImg.loading = "eager";
-      panoramaImg.src = "./sp_samurai_panorama_seamless_v2.png";
-      panoramaImg.onerror = () => {
-        console.error("Samurai panorama failed to load:", panoramaImg.src);
-      };
 
-      // Floor material replacement: this is the part that actually changes the floor.
-      // The previous version only added a weak tint over the old blue floor texture.
-      if (typeof floorTileImg !== "undefined") {
-        floorTileImg.onload = () => {
-          if (typeof floorTilePattern !== "undefined") {
-            floorTilePattern = ctx.createPattern(floorTileImg, "repeat");
-          }
-        };
-        floorTileImg.onerror = () => {
-          console.error("Samurai floor texture failed to load:", floorTileImg.src);
-        };
-        floorTileImg.src = "./samurai_floor_reflection_tile.png";
-      }
-
-      // Override the floor-tile renderer so the new wet stone / shallow-water texture is visible.
-      drawTexturedFloorTile = function drawTexturedFloorTile(p0, p1, p2, p3, tx, ty, fog) {
-        if (!floorTileImg.complete || floorTileImg.naturalWidth === 0) return false;
-
-        const minX = Math.min(p0.x, p1.x, p2.x, p3.x);
-        const maxX = Math.max(p0.x, p1.x, p2.x, p3.x);
-        const minY = Math.min(p0.y, p1.y, p2.y, p3.y);
-        const maxY = Math.max(p0.y, p1.y, p2.y, p3.y);
-
-        const w = maxX - minX;
-        const h = maxY - minY;
-        if (w <= 1 || h <= 1) return false;
-
-        ctx.save();
-        ctx.beginPath();
-        ctx.moveTo(p0.x, p0.y);
-        ctx.lineTo(p1.x, p1.y);
-        ctx.lineTo(p2.x, p2.y);
-        ctx.lineTo(p3.x, p3.y);
-        ctx.closePath();
-        ctx.clip();
-
-        // Stronger than the old 0.38, otherwise the old blue floor look wins visually.
-        ctx.globalAlpha = 0.74;
-        ctx.drawImage(floorTileImg, minX, minY, w, h);
-        ctx.globalAlpha = 1.0;
-
-        // Keep the arena readable and connected to the warm sky reflection.
-        const wetShade = ctx.createLinearGradient(0, minY, 0, maxY);
-        wetShade.addColorStop(0, `rgba(255, 176, 102, ${0.05 + (1 - fog) * 0.05})`);
-        wetShade.addColorStop(0.45, `rgba(8, 22, 42, ${0.10 + fog * 0.08})`);
-        wetShade.addColorStop(1, `rgba(0, 6, 18, ${0.20 + fog * 0.10})`);
-        ctx.fillStyle = wetShade;
-        ctx.fillRect(minX, minY, w, h);
-
-        ctx.restore();
-        return true;
-      };
-
-
-      function drawWrappedPanoramaImageV21(img, srcX, srcY, srcW, srcH, dstX, dstY, dstW, dstH) {
-        const imgW = img.naturalWidth || img.width;
-        if (!imgW || srcW <= 0) return;
-
-        let sx = ((srcX % imgW) + imgW) % imgW;
-        let remainingSrcW = srcW;
-        let currentDstX = dstX;
-
-        while (remainingSrcW > 0.01) {
-          const chunkSrcW = Math.min(remainingSrcW, imgW - sx);
-          const chunkDstW = dstW * (chunkSrcW / srcW);
-
-          ctx.drawImage(
-            img,
-            sx,
-            srcY,
-            chunkSrcW,
-            srcH,
-            currentDstX,
-            dstY,
-            chunkDstW,
-            dstH
-          );
-
-          remainingSrcW -= chunkSrcW;
-          currentDstX += chunkDstW;
-          sx = 0;
-        }
-      }
-
+    // ===== SP Lightweight Pink / Ice-White Hex Surface Background =====
+    // SP version: remove the heavy 360 panorama image and mirrored reflection.
+    // This draws a procedural hex surface directly on Canvas: no background image assets.
+    (function applySpPinkIceHexSurfaceBackground() {
       const baseDrawFloor = drawFloor;
 
-      drawBackground = function drawBackground() {
-        const horizon = getSceneHorizon();
+      const SP_BG = {
+        stars: [],
+        hexes: [],
+        initialized: false,
+        lastW: 0,
+        lastH: 0,
+        r: 6.0,
+        seed: 2026050611,
+      };
 
-        if (!panoramaImg.complete || !panoramaImg.naturalWidth) {
-          const ceiling = ctx.createLinearGradient(0, 0, 0, horizon);
-          ceiling.addColorStop(0, "#171522");
-          ceiling.addColorStop(0.45, "#34243a");
-          ceiling.addColorStop(1, "#6e3f32");
-          ctx.fillStyle = ceiling;
-          ctx.fillRect(0, 0, WIDTH, horizon);
+      function seededRandomFactory(seed) {
+        return function rand() {
+          seed = (seed * 1664525 + 1013904223) >>> 0;
+          return seed / 4294967296;
+        };
+      }
 
-          ctx.fillStyle = "#08101a";
-          ctx.fillRect(0, horizon, WIDTH, HEIGHT - horizon);
-          return;
+      function initSpHexBackground() {
+        if (SP_BG.initialized && SP_BG.lastW === WIDTH && SP_BG.lastH === HEIGHT) return;
+
+        const rand = seededRandomFactory(SP_BG.seed);
+        const R = SP_BG.r;
+        const rowH = Math.sqrt(3) * R;
+
+        SP_BG.stars.length = 0;
+        SP_BG.hexes.length = 0;
+
+        // Keep sparse for SP performance.
+        for (let i = 0; i < 22; i++) {
+          SP_BG.stars.push({
+            x: rand() * WIDTH,
+            y: rand() * HEIGHT,
+            a: 0.03 + rand() * 0.08,
+            p: rand() * Math.PI * 2,
+            s: 1,
+          });
         }
 
-        const img = panoramaImg;
-        const imgW = img.naturalWidth || img.width;
-        const imgH = img.naturalHeight || img.height;
+        for (let row = -1; row < Math.ceil(HEIGHT / rowH) + 2; row++) {
+          for (let col = -1; col < Math.ceil(WIDTH / (R * 3)) + 2; col++) {
+            const x = col * R * 3 + (row % 2 ? R * 1.5 : 0);
+            const y = row * rowH;
+            if (x < -24 || x > WIDTH + 24 || y < -24 || y > HEIGHT + 24) continue;
+
+            let weight = 1.0;
+            if (y > HEIGHT * 0.70) weight = 1.08;
+            else if (y < HEIGHT * 0.25) weight = 0.92;
+
+            SP_BG.hexes.push({
+              x,
+              y,
+              seed: rand() * Math.PI * 2,
+              w: weight,
+            });
+          }
+        }
+
+        SP_BG.initialized = true;
+        SP_BG.lastW = WIDTH;
+        SP_BG.lastH = HEIGHT;
+      }
+
+      function mix(a, b, t) {
+        return a + (b - a) * t;
+      }
+
+      function smoothstep(edge0, edge1, x) {
+        const t = clamp((x - edge0) / (edge1 - edge0), 0, 1);
+        return t * t * (3 - 2 * t);
+      }
+
+      function lerpColor(c1, c2, t) {
+        const r = Math.round(mix(c1[0], c2[0], t));
+        const g = Math.round(mix(c1[1], c2[1], t));
+        const b = Math.round(mix(c1[2], c2[2], t));
+        return `rgb(${r}, ${g}, ${b})`;
+      }
+
+      function pathHex(x, y, rr) {
+        ctx.beginPath();
+        for (let k = 0; k < 6; k++) {
+          const a = Math.PI / 6 + k * Math.PI / 3;
+          const px = x + Math.cos(a) * rr;
+          const py = y + Math.sin(a) * rr;
+          if (k === 0) ctx.moveTo(px, py);
+          else ctx.lineTo(px, py);
+        }
+        ctx.closePath();
+      }
+
+      function drawSpHexAt(x, y, rr, stroke, alpha, fillGlow = false) {
+        ctx.globalAlpha = alpha;
+        ctx.strokeStyle = stroke;
+        ctx.lineWidth = 0.88;
+        pathHex(x, y, rr);
+        ctx.stroke();
+
+        if (fillGlow) {
+          ctx.globalAlpha = alpha * 0.38;
+          ctx.fillStyle = stroke;
+          pathHex(x, y, rr * 1.16);
+          ctx.fill();
+        }
+      }
+
+      function drawSpStars(t) {
+        ctx.fillStyle = "#ffd2f4";
+        for (const s of SP_BG.stars) {
+          ctx.globalAlpha = s.a * (0.85 + Math.sin(t * 0.35 + s.p) * 0.15);
+          ctx.fillRect(s.x, s.y, s.s, s.s);
+        }
+        ctx.globalAlpha = 1;
+      }
+
+      function drawSpHexSurface(t, horizon) {
+        const R = SP_BG.r;
+
+        // 360-style horizontal continuity.
+        // The field scrolls with camera angle, but the wave logic stays surface-based.
         const normalizedAngle = ((player.angle % (Math.PI * 2)) + Math.PI * 2) % (Math.PI * 2);
+        const cameraShift = (normalizedAngle / (Math.PI * 2)) * WIDTH;
 
-        // Reverse the previous panorama movement.
-        // If it still feels reversed in your actual device/browser, change the next line to:
-        // const centerSrcX = (normalizedAngle / (Math.PI * 2)) * imgW;
-        const visibleSrcW = imgW * 0.56;
-        const centerSrcX = (1 - normalizedAngle / (Math.PI * 2)) * imgW;
-        const srcX = centerSrcX - visibleSrcW / 2;
+        // Slower movement than earlier preview.
+        const travel = t * 0.42;
 
-        const pitch = typeof player.pitch === "number" ? player.pitch : 0;
-        const pitchShift = clamp(pitch, -MAX_PITCH, MAX_PITCH) * HEIGHT * 0.22;
-        const bgY = -HEIGHT * 0.12 + pitchShift;
-        const bgH = HEIGHT * 0.76;
+        // Pink background + ice-white hex palette.
+        const C_DARK = [117, 86, 150];
+        const C_MID  = [210, 154, 230];
+        const C_BRT  = [255, 238, 248];
 
-        drawWrappedPanoramaImageV21(
-          img,
-          srcX,
-          0,
-          visibleSrcW,
-          imgH,
-          0,
-          bgY,
-          WIDTH,
-          bgH
-        );
+        for (const h of SP_BG.hexes) {
+          // Wrapped visible x so the pattern behaves like a continuous 360 sheet.
+          let visibleX = ((h.x - cameraShift) % WIDTH + WIDTH) % WIDTH;
+          if (visibleX < -16) visibleX += WIDTH;
 
-        const skyShade = ctx.createLinearGradient(0, 0, 0, horizon);
-        skyShade.addColorStop(0, "rgba(5, 8, 18, 0.15)");
-        skyShade.addColorStop(0.62, "rgba(22, 12, 20, 0.04)");
-        skyShade.addColorStop(1, "rgba(255, 186, 110, 0.08)");
-        ctx.fillStyle = skyShade;
-        ctx.fillRect(0, 0, WIDTH, horizon);
+          const worldX = h.x + cameraShift;
 
-        // Lower-half reflection: mirrored panorama, darkened/faded so it reads as water, not a second sky.
-        const reflectionTop = horizon;
-        const reflectionH = HEIGHT - reflectionTop;
-        const shimmerOffset = Math.sin(performance.now() * 0.00045) * imgW * 0.003;
-        ctx.save();
-        ctx.globalAlpha = 0.24;
-        drawWrappedPanoramaImageV21(
-          img,
-          srcX + shimmerOffset,
-          0,
-          visibleSrcW,
-          imgH,
-          0,
-          HEIGHT,
-          WIDTH,
-          -reflectionH * 0.96
-        );
-        ctx.restore();
+          // Broad soft bands: bright -> dark -> bright, but not a hard object sliding right.
+          const band1 = Math.sin(worldX * 0.0125 - travel * 1.65 + h.y * 0.0088);
+          const band2 = Math.sin(worldX * 0.0065 - h.y * 0.0120 - travel * 0.88 + h.seed * 0.10);
+          const band3 = Math.sin((worldX + h.y) * 0.0038 - travel * 0.48);
 
-        const reflectionShade = ctx.createLinearGradient(0, reflectionTop, 0, HEIGHT);
-        reflectionShade.addColorStop(0, "rgba(15, 30, 50, 0.18)");
-        reflectionShade.addColorStop(0.18, "rgba(8, 18, 34, 0.43)");
-        reflectionShade.addColorStop(0.58, "rgba(4, 12, 26, 0.82)");
-        reflectionShade.addColorStop(1, "rgba(2, 8, 18, 0.98)");
-        ctx.fillStyle = reflectionShade;
-        ctx.fillRect(0, reflectionTop, WIDTH, reflectionH);
+          let v = 0.5 + band1 * 0.18 + band2 * 0.11 + band3 * 0.05;
+          v = clamp(v, 0, 1);
+          const vSmooth = smoothstep(0.03, 0.97, v);
 
-        const horizonGlow = ctx.createLinearGradient(0, horizon - 6, 0, horizon + 18);
-        horizonGlow.addColorStop(0, "rgba(255, 210, 160, 0.00)");
-        horizonGlow.addColorStop(0.45, "rgba(255, 190, 120, 0.16)");
-        horizonGlow.addColorStop(1, "rgba(60, 110, 170, 0.02)");
-        ctx.fillStyle = horizonGlow;
-        ctx.fillRect(0, horizon - 6, WIDTH, 24);
+          // Surface-like movement. Kept subtle for SP and readability.
+          const shiftX = (band2 * 0.48 + band3 * 0.15);
+          const liftY = (band1 * 1.25 + band2 * 0.85 + band3 * 0.35) * h.w;
+          const x = visibleX + shiftX;
+          const y = h.y - liftY;
+
+          // Use the whole screen but make upper sky a little calmer.
+          const skyCalm = y < horizon * 0.34 ? 0.72 : 1;
+          const rr = R * (0.95 + vSmooth * 0.15) * h.w * skyCalm;
+          const alpha = (0.095 + vSmooth * 0.18) * skyCalm;
+
+          const t1 = Math.min(vSmooth / 0.60, 1);
+          const t2 = Math.max(0, (vSmooth - 0.40) / 0.60);
+          const cA = lerpColor(C_DARK, C_MID, t1);
+          const cB = lerpColor(C_MID, C_BRT, t2);
+          const stroke = vSmooth < 0.52 ? cA : cB;
+
+          drawSpHexAt(x, y, rr, stroke, alpha, vSmooth > 0.78);
+
+          // Draw copy at edge for seamless wrap.
+          if (x < 20) drawSpHexAt(x + WIDTH, y, rr, stroke, alpha, vSmooth > 0.78);
+          else if (x > WIDTH - 20) drawSpHexAt(x - WIDTH, y, rr, stroke, alpha, vSmooth > 0.78);
+
+          // Sparse pixel accents only on brighter cells.
+          if (((h.x + h.y) % 38) < 1.0 && vSmooth > 0.56) {
+            ctx.globalAlpha = 0.025 + vSmooth * 0.08;
+            ctx.fillStyle = lerpColor(C_MID, C_BRT, Math.max(0, (vSmooth - 0.52) / 0.48));
+            ctx.fillRect(x - 1, y - 1, 2, 2);
+          }
+        }
+
+        ctx.globalAlpha = 1;
+      }
+
+      drawBackground = function drawBackground() {
+        initSpHexBackground();
+
+        const t = performance.now() * 0.001;
+        const horizon = getSceneHorizon();
+
+        const sky = ctx.createLinearGradient(0, 0, 0, HEIGHT);
+        sky.addColorStop(0, "#180914");
+        sky.addColorStop(0.50, "#2a1030");
+        sky.addColorStop(1, "#160914");
+        ctx.fillStyle = sky;
+        ctx.fillRect(0, 0, WIDTH, HEIGHT);
+
+        const softGlow = ctx.createRadialGradient(WIDTH * 0.5, HEIGHT * 0.58, 0, WIDTH * 0.5, HEIGHT * 0.58, WIDTH * 0.66);
+        softGlow.addColorStop(0, "rgba(255, 170, 235, 0.10)");
+        softGlow.addColorStop(0.60, "rgba(160, 70, 140, 0.03)");
+        softGlow.addColorStop(1, "rgba(0, 0, 0, 0)");
+        ctx.fillStyle = softGlow;
+        ctx.fillRect(0, 0, WIDTH, HEIGHT);
+
+        drawSpStars(t);
+
+        const floorShade = ctx.createLinearGradient(0, horizon, 0, HEIGHT);
+        floorShade.addColorStop(0, "rgba(255, 170, 235, 0.00)");
+        floorShade.addColorStop(1, "rgba(90, 32, 78, 0.12)");
+        ctx.fillStyle = floorShade;
+        ctx.fillRect(0, horizon, WIDTH, HEIGHT - horizon);
+
+        drawSpHexSurface(t, horizon);
       };
 
       drawFloor = function drawFloor() {
         baseDrawFloor();
 
+        // Very light pink/ice tint over the floor so the SP background feels connected.
         const horizon = getSceneHorizon();
-        const floorTop = horizon;
-        const floorH = HEIGHT - floorTop;
-
-        // Tie the floor color to the warm sky + cool water reflection palette.
-        const floorTint = ctx.createLinearGradient(0, floorTop, 0, HEIGHT);
-        floorTint.addColorStop(0, "rgba(250, 182, 120, 0.10)");
-        floorTint.addColorStop(0.14, "rgba(38, 78, 126, 0.08)");
-        floorTint.addColorStop(0.45, "rgba(8, 26, 54, 0.18)");
-        floorTint.addColorStop(1, "rgba(2, 10, 24, 0.28)");
+        const floorTint = ctx.createLinearGradient(0, horizon, 0, HEIGHT);
+        floorTint.addColorStop(0, "rgba(255, 180, 235, 0.035)");
+        floorTint.addColorStop(0.45, "rgba(145, 80, 155, 0.045)");
+        floorTint.addColorStop(1, "rgba(40, 12, 36, 0.10)");
         ctx.fillStyle = floorTint;
-        ctx.fillRect(0, floorTop, WIDTH, floorH);
-
-        // Very subtle water-like highlight lines. Kept light for performance and readability.
-        const t = performance.now() * 0.00115;
-        ctx.save();
-        for (let i = 0; i < 5; i++) {
-          const y = floorTop + 24 + i * 34 + Math.sin(t * 1.6 + i * 1.45) * 4;
-          ctx.beginPath();
-          for (let x = 0; x <= WIDTH; x += 18) {
-            const waveY = y + Math.sin(t * 2.1 + x * 0.012 + i) * 1.8;
-            if (x === 0) ctx.moveTo(x, waveY);
-            else ctx.lineTo(x, waveY);
-          }
-          ctx.strokeStyle = i < 2
-            ? "rgba(255, 198, 132, 0.05)"
-            : "rgba(120, 190, 255, 0.035)";
-          ctx.lineWidth = 1;
-          ctx.stroke();
-        }
-        ctx.restore();
+        ctx.fillRect(0, horizon, WIDTH, HEIGHT - horizon);
       };
     })();
+
 
     ensureLoopRunning();
   </script>
